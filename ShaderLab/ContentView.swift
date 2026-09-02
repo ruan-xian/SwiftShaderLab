@@ -5,7 +5,6 @@ import UniformTypeIdentifiers
 private enum ControlTab: String, CaseIterable, Identifiable {
     case shader = "Shader"
     case gradient = "Gradient"
-    case preview = "Preview"
 
     var id: Self { self }
 }
@@ -19,16 +18,13 @@ struct ContentView: View {
     @State private var exportDocument = JSONFileDocument(data: Data())
     @State private var statusMessage: String?
     @State private var isRepositioningBackground = false
+    @State private var isPreviewControlsExpanded = false
 
     var body: some View {
         GeometryReader { geometry in
             if geometry.size.width >= 900 {
                 HStack(spacing: 0) {
-                    PreviewPane(
-                        shaderSettings: store.document.shader,
-                        previewSettings: $store.document.preview,
-                        isRepositioningBackground: $isRepositioningBackground
-                    )
+                    previewPanel
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
 
                     Divider()
@@ -38,11 +34,7 @@ struct ContentView: View {
                 }
             } else {
                 VStack(spacing: 0) {
-                    PreviewPane(
-                        shaderSettings: store.document.shader,
-                        previewSettings: $store.document.preview,
-                        isRepositioningBackground: $isRepositioningBackground
-                    )
+                    previewPanel
                     .frame(minHeight: 300)
 
                     Divider()
@@ -53,8 +45,8 @@ struct ContentView: View {
             }
         }
         .background(Color(uiColor: .systemBackground))
-        .onChange(of: selectedTab) { _, tab in
-            if tab != .preview {
+        .onChange(of: isPreviewControlsExpanded) { _, isExpanded in
+            if !isExpanded {
                 isRepositioningBackground = false
             }
         }
@@ -78,6 +70,35 @@ struct ContentView: View {
             case let .failure(error):
                 statusMessage = "Export failed: \(error.localizedDescription)"
             }
+        }
+    }
+
+    private var previewPanel: some View {
+        VStack(spacing: 0) {
+            PreviewPane(
+                shaderSettings: store.document.shader,
+                previewSettings: $store.document.preview,
+                isRepositioningBackground: $isRepositioningBackground
+            )
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+
+            Divider()
+
+            DisclosureGroup(isExpanded: $isPreviewControlsExpanded) {
+                ScrollView {
+                    PreviewControlsView(
+                        settings: $store.document.preview,
+                        isRepositioningBackground: $isRepositioningBackground
+                    )
+                    .padding(.top, 16)
+                }
+                .frame(maxHeight: 360)
+            } label: {
+                Label("Preview Controls", systemImage: "rectangle.on.rectangle")
+                    .font(.headline)
+            }
+            .padding(16)
+            .background(.regularMaterial)
         }
     }
 
@@ -151,12 +172,6 @@ struct ContentView: View {
             GradientEditor(
                 stops: $store.document.shader.gradientStops,
                 defaultStops: ShaderSettings.defaults.gradientStops
-            )
-
-        case .preview:
-            PreviewControlsView(
-                settings: $store.document.preview,
-                isRepositioningBackground: $isRepositioningBackground
             )
         }
     }
