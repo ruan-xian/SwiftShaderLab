@@ -2,6 +2,8 @@ import SwiftUI
 
 /// Replace this view with the shader or renderer under development.
 /// Keep the `ShaderSettings` input so the surrounding lab remains reusable.
+/// Remove the template's existing settings and inspector tabs, then replace them
+/// with controls for your shader, reusing the predefined controls where possible.
 struct ShaderPreviewView: View {
     let settings: ShaderSettings
 
