@@ -415,13 +415,26 @@ private struct PreviewControlsView: View {
             HStack {
                 Text("Background")
                 Spacer()
-                Picker("Background", selection: $settings.backgroundMode) {
+                Menu {
                     ForEach(BackgroundMode.allCases) { option in
-                        Text(option.title).tag(option)
+                        Button {
+                            settings.backgroundMode = option
+                            isRepositioningBackground = false
+                        } label: {
+                            if settings.backgroundMode == option {
+                                Label(option.title, systemImage: "checkmark")
+                            } else {
+                                Text(option.title)
+                            }
+                        }
                     }
+                } label: {
+                    Label(
+                        settings.backgroundMode.title,
+                        systemImage: "chevron.up.chevron.down"
+                    )
                 }
-                .labelsHidden()
-                .pickerStyle(.menu)
+                .accessibilityLabel("Background")
             }
 
             switch settings.backgroundMode {
