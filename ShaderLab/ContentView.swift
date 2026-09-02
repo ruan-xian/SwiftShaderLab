@@ -170,7 +170,6 @@ struct ContentView: View {
                     statusMessage = "Defaults restored"
                 }
             }
-            .labelStyle(.iconOnly)
             .buttonStyle(.bordered)
 
             HStack {
