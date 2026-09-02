@@ -87,28 +87,44 @@ struct ContentView: View {
                 .clipped()
                 .allowsHitTesting(isPreviewControlsExpanded)
 
-                Button {
-                    withAnimation(.easeInOut(duration: 0.3)) {
-                        isPreviewControlsExpanded.toggle()
-                    }
-                } label: {
-                    HStack {
+                HStack(spacing: 12) {
+                    Button(action: togglePreviewControls) {
                         Label("Preview Controls", systemImage: "rectangle.on.rectangle")
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
 
-                        Spacer()
+                    Toggle(isOn: $store.document.preview.isLocked) {
+                        Label(
+                            "Lock",
+                            systemImage: store.document.preview.isLocked ? "lock.fill" : "lock.open"
+                        )
+                    }
+                    .toggleStyle(.button)
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
+                    .accessibilityValue(store.document.preview.isLocked ? "Locked" : "Unlocked")
 
+                    Button(action: togglePreviewControls) {
                         Image(systemName: "chevron.up")
                             .rotationEffect(.degrees(isPreviewControlsExpanded ? 180 : 0))
                     }
-                    .font(.headline)
-                    .contentShape(Rectangle())
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("Preview controls")
+                    .accessibilityValue(isPreviewControlsExpanded ? "Expanded" : "Collapsed")
                 }
-                .buttonStyle(.plain)
+                .font(.headline)
                 .padding(16)
-                .accessibilityValue(isPreviewControlsExpanded ? "Expanded" : "Collapsed")
             }
             .background(.regularMaterial)
             .clipped()
+        }
+    }
+
+    private func togglePreviewControls() {
+        withAnimation(.easeInOut(duration: 0.3)) {
+            isPreviewControlsExpanded.toggle()
         }
     }
 
@@ -713,17 +729,6 @@ private struct PreviewControlsView: View {
                 .buttonStyle(.bordered)
                 .controlSize(.small)
                 .disabled(isBackgroundCentered)
-
-                Toggle(isOn: $settings.isLocked) {
-                    Label(
-                        "Lock",
-                        systemImage: settings.isLocked ? "lock.fill" : "lock.open"
-                    )
-                }
-                .toggleStyle(.button)
-                .buttonStyle(.bordered)
-                .controlSize(.small)
-                .accessibilityValue(settings.isLocked ? "Locked" : "Unlocked")
             }
 
             LabSlider(
