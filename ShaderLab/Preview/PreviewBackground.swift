@@ -24,7 +24,7 @@ struct PreviewBackground: View {
                 ZStack {
                     Color(uiColor: .systemBackground)
 
-                    Image("PreviewBackground")
+                    Image(settings.imageAsset.imageName)
                         .resizable()
                         .scaledToFill()
                         .frame(width: geometry.size.width, height: geometry.size.height)

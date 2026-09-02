@@ -409,6 +409,7 @@ private struct ShaderControlsView: View {
 private struct PreviewControlsView: View {
     @Binding var settings: PreviewSettings
     @Binding var isRepositioningBackground: Bool
+    @State private var isImageAssetPickerPresented = false
 
     var body: some View {
         VStack(spacing: 16) {
@@ -455,15 +456,113 @@ private struct PreviewControlsView: View {
                 checkerboardControls
 
             case .image:
+                imageAssetPicker
                 placementControls
 
-                Text("Replace PreviewBackground.png in Assets.xcassets to customize this preset.")
+                Text("Add image sets to BackgroundImageAsset to include them in this picker.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
         }
         .font(.caption)
+    }
+
+    private var imageAssetPicker: some View {
+        HStack {
+            Text("Image")
+
+            Spacer()
+
+            Button {
+                isImageAssetPickerPresented = true
+            } label: {
+                HStack(spacing: 8) {
+                    Image(settings.imageAsset.imageName)
+                        .resizable()
+                        .scaledToFill()
+                        .frame(width: 56, height: 36)
+                        .clipShape(RoundedRectangle(cornerRadius: 5))
+
+                    Text(settings.imageAsset.title)
+                        .lineLimit(1)
+
+                    Image(systemName: "chevron.up.chevron.down")
+                        .foregroundStyle(.secondary)
+                }
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .popover(isPresented: $isImageAssetPickerPresented, arrowEdge: .trailing) {
+                imageAssetGrid
+                    .presentationCompactAdaptation(.popover)
+            }
+            .accessibilityLabel("Background image")
+            .accessibilityValue(settings.imageAsset.title)
+        }
+    }
+
+    private var imageAssetGrid: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Choose an image")
+                .font(.headline)
+
+            ScrollView {
+                LazyVGrid(
+                    columns: [GridItem(.adaptive(minimum: 112), spacing: 8)],
+                    spacing: 8
+                ) {
+                    ForEach(BackgroundImageAsset.allCases) { asset in
+                        imageAssetButton(asset)
+                    }
+                }
+            }
+        }
+        .padding(12)
+        .frame(width: 360, height: 240)
+    }
+
+    private func imageAssetButton(_ asset: BackgroundImageAsset) -> some View {
+        let isSelected = settings.imageAsset == asset
+
+        return Button {
+            settings.imageAsset = asset
+            isImageAssetPickerPresented = false
+        } label: {
+            VStack(alignment: .leading, spacing: 6) {
+                Image(asset.imageName)
+                    .resizable()
+                    .scaledToFill()
+                    .frame(maxWidth: .infinity)
+                    .aspectRatio(16 / 9, contentMode: .fit)
+                    .clipShape(RoundedRectangle(cornerRadius: 6))
+                    .overlay(alignment: .topTrailing) {
+                        if isSelected {
+                            Image(systemName: "checkmark.circle.fill")
+                                .symbolRenderingMode(.palette)
+                                .foregroundStyle(.white, Color.accentColor)
+                                .padding(5)
+                        }
+                    }
+
+                Text(asset.title)
+                    .lineLimit(1)
+            }
+            .padding(6)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(isSelected ? Color.accentColor.opacity(0.18) : .clear)
+            )
+            .overlay {
+                RoundedRectangle(cornerRadius: 8)
+                    .stroke(isSelected ? Color.accentColor : Color.secondary.opacity(0.25))
+            }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(asset.title)
+        .accessibilityAddTraits(isSelected ? [.isSelected] : [])
     }
 
     private var checkerboardControls: some View {

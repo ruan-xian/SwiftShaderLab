@@ -89,6 +89,7 @@ struct PreviewSettings: Codable, Equatable {
     var checkerShowsCoordinates: Bool
     var checkerOffsetX: Double
     var checkerOffsetY: Double
+    var imageAsset: BackgroundImageAsset
     var imageOffsetX: Double
     var imageOffsetY: Double
     var imageScale: Double
@@ -101,6 +102,7 @@ struct PreviewSettings: Codable, Equatable {
         checkerShowsCoordinates: false,
         checkerOffsetX: 0,
         checkerOffsetY: 0,
+        imageAsset: .waves,
         imageOffsetX: 0,
         imageOffsetY: 0,
         imageScale: 1
@@ -135,6 +137,20 @@ enum CheckerboardMode: String, Codable, CaseIterable, Identifiable {
         case .blackWhite: "Black + White"
         case .rainbowWhite: "Rainbow + White"
         case .rainbowBlack: "Rainbow + Black"
+        }
+    }
+}
+
+enum BackgroundImageAsset: String, Codable, CaseIterable, Identifiable {
+    // Add image sets here to make them available in the background picker.
+    case waves = "PreviewBackground"
+
+    var id: Self { self }
+    var imageName: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .waves: "Waves"
         }
     }
 }
