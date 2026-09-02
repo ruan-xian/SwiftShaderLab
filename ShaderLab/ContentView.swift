@@ -84,21 +84,41 @@ struct ContentView: View {
 
             Divider()
 
-            DisclosureGroup(isExpanded: $isPreviewControlsExpanded) {
-                ScrollView {
-                    PreviewControlsView(
-                        settings: $store.document.preview,
-                        isRepositioningBackground: $isRepositioningBackground
-                    )
-                    .padding(.top, 16)
+            VStack(spacing: 0) {
+                if isPreviewControlsExpanded {
+                    ScrollView {
+                        PreviewControlsView(
+                            settings: $store.document.preview,
+                            isRepositioningBackground: $isRepositioningBackground
+                        )
+                        .padding(16)
+                    }
+                    .frame(maxHeight: 360)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
                 }
-                .frame(maxHeight: 360)
-            } label: {
-                Label("Preview Controls", systemImage: "rectangle.on.rectangle")
+
+                Button {
+                    withAnimation(.easeInOut(duration: 0.25)) {
+                        isPreviewControlsExpanded.toggle()
+                    }
+                } label: {
+                    HStack {
+                        Label("Preview Controls", systemImage: "rectangle.on.rectangle")
+
+                        Spacer()
+
+                        Image(systemName: "chevron.up")
+                            .rotationEffect(.degrees(isPreviewControlsExpanded ? 180 : 0))
+                    }
                     .font(.headline)
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .padding(16)
+                .accessibilityValue(isPreviewControlsExpanded ? "Expanded" : "Collapsed")
             }
-            .padding(16)
             .background(.regularMaterial)
+            .clipped()
         }
     }
 
