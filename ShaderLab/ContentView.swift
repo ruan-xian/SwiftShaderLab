@@ -17,7 +17,6 @@ struct ContentView: View {
     @State private var isExporting = false
     @State private var exportDocument = JSONFileDocument(data: Data())
     @State private var statusMessage: String?
-    @State private var isRepositioningBackground = false
     @State private var isPreviewControlsExpanded = false
 
     var body: some View {
@@ -45,14 +44,6 @@ struct ContentView: View {
             }
         }
         .background(Color(uiColor: .systemBackground))
-        .onChange(of: isPreviewControlsExpanded) { _, isExpanded in
-            if !isExpanded {
-                isRepositioningBackground = false
-            }
-        }
-        .onChange(of: store.document.preview.backgroundMode) {
-            isRepositioningBackground = false
-        }
         .fileImporter(isPresented: $isImporting, allowedContentTypes: [.json]) {
             importSettings(from: $0)
         }
@@ -77,8 +68,7 @@ struct ContentView: View {
         VStack(spacing: 0) {
             PreviewPane(
                 shaderSettings: store.document.shader,
-                previewSettings: $store.document.preview,
-                isRepositioningBackground: $isRepositioningBackground
+                previewSettings: $store.document.preview
             )
             .frame(maxWidth: .infinity, maxHeight: .infinity)
 
@@ -87,10 +77,7 @@ struct ContentView: View {
             VStack(spacing: 0) {
                 ZStack(alignment: .bottom) {
                     ScrollView {
-                        PreviewControlsView(
-                            settings: $store.document.preview,
-                            isRepositioningBackground: $isRepositioningBackground
-                        )
+                        PreviewControlsView(settings: $store.document.preview)
                         .padding(16)
                     }
                     .frame(height: 360)
@@ -165,7 +152,6 @@ struct ContentView: View {
                 Spacer()
 
                 Button("Reset", systemImage: "arrow.counterclockwise", role: .destructive) {
-                    isRepositioningBackground = false
                     store.reset()
                     statusMessage = "Defaults restored"
                 }
@@ -230,7 +216,6 @@ struct ContentView: View {
                 }
             }
             try store.importData(Data(contentsOf: url))
-            isRepositioningBackground = false
             statusMessage = "Settings imported"
         } catch let error as CocoaError where error.code == .userCancelled {
             statusMessage = "Import cancelled"
@@ -243,7 +228,6 @@ struct ContentView: View {
 private struct PreviewPane: View {
     let shaderSettings: ShaderSettings
     @Binding var previewSettings: PreviewSettings
-    @Binding var isRepositioningBackground: Bool
 
     @GestureState private var dragTranslation = CGSize.zero
     @GestureState private var magnification: CGFloat = 1
@@ -257,7 +241,7 @@ private struct PreviewPane: View {
                 ShaderPreviewView(settings: shaderSettings)
                     .padding(36)
 
-                if isRepositioningBackground {
+                if isBackgroundInteractionEnabled {
                     TrackpadPanSurface(
                         onChanged: { trackpadTranslation = $0 },
                         onEnded: { translation in
@@ -292,7 +276,7 @@ private struct PreviewPane: View {
                 }
             }
             .contentShape(Rectangle())
-            .focusable(isRepositioningBackground)
+            .focusable(isBackgroundInteractionEnabled)
             .focused($editSurfaceFocused)
             .onKeyPress(phases: [.down, .repeat]) { keyPress in
                 handleKeyPress(keyPress, in: geometry.size)
@@ -300,12 +284,16 @@ private struct PreviewPane: View {
         }
         .clipped()
         .accessibilityElement(children: .contain)
-        .onChange(of: isRepositioningBackground) { _, isRepositioning in
-            editSurfaceFocused = isRepositioning
-            if !isRepositioning {
+        .onChange(of: isBackgroundInteractionEnabled) { _, isEnabled in
+            editSurfaceFocused = isEnabled
+            if !isEnabled {
                 trackpadTranslation = .zero
             }
         }
+    }
+
+    private var isBackgroundInteractionEnabled: Bool {
+        !previewSettings.isLocked && previewSettings.backgroundMode != .solid
     }
 
     private func displayedSettings(in size: CGSize) -> PreviewSettings {
@@ -376,10 +364,10 @@ private struct PreviewPane: View {
     }
 
     private func handleKeyPress(_ keyPress: KeyPress, in size: CGSize) -> KeyPress.Result {
-        guard isRepositioningBackground else { return .ignored }
+        guard isBackgroundInteractionEnabled else { return .ignored }
 
         if keyPress.key == .escape {
-            isRepositioningBackground = false
+            previewSettings.isLocked = true
             return .handled
         }
 
@@ -539,7 +527,6 @@ private struct ShaderControlsView: View {
 
 private struct PreviewControlsView: View {
     @Binding var settings: PreviewSettings
-    @Binding var isRepositioningBackground: Bool
     @State private var isImageAssetPickerPresented = false
 
     var body: some View {
@@ -551,7 +538,6 @@ private struct PreviewControlsView: View {
                     ForEach(BackgroundMode.allCases) { option in
                         Button {
                             settings.backgroundMode = option
-                            isRepositioningBackground = false
                         } label: {
                             if settings.backgroundMode == option {
                                 Label(option.title, systemImage: "checkmark")
@@ -728,16 +714,16 @@ private struct PreviewControlsView: View {
                 .controlSize(.small)
                 .disabled(isBackgroundCentered)
 
-                Button(
-                    isRepositioningBackground ? "Done" : "Reposition",
-                    systemImage: isRepositioningBackground
-                        ? "checkmark"
-                        : "arrow.up.and.down.and.arrow.left.and.right"
-                ) {
-                    isRepositioningBackground.toggle()
+                Toggle(isOn: $settings.isLocked) {
+                    Label(
+                        "Lock",
+                        systemImage: settings.isLocked ? "lock.fill" : "lock.open"
+                    )
                 }
-                .buttonStyle(.borderedProminent)
+                .toggleStyle(.button)
+                .buttonStyle(.bordered)
                 .controlSize(.small)
+                .accessibilityValue(settings.isLocked ? "Locked" : "Unlocked")
             }
 
             LabSlider(
@@ -750,7 +736,7 @@ private struct PreviewControlsView: View {
                 scale: .logarithmic
             )
 
-            Text("Reposition enables dragging, arrow-key nudging, and trackpad pinch in the preview.")
+            Text("When unlocked, drag, use the arrow keys, or pinch the trackpad in the preview.")
                 .foregroundStyle(.secondary)
                 .frame(maxWidth: .infinity, alignment: .leading)
         }

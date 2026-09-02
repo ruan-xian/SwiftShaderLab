@@ -83,6 +83,7 @@ struct ShaderSettings: Codable, Equatable {
 
 struct PreviewSettings: Codable, Equatable {
     var backgroundMode: BackgroundMode
+    var isLocked: Bool
     var solidColor: SRGBAColor
     var checkerMode: CheckerboardMode
     var checkerScale: Double
@@ -96,6 +97,7 @@ struct PreviewSettings: Codable, Equatable {
 
     static let defaults = PreviewSettings(
         backgroundMode: .solid,
+        isLocked: false,
         solidColor: SRGBAColor(red: 0.13, green: 0.13, blue: 0.15),
         checkerMode: .blackWhite,
         checkerScale: 96,
@@ -107,6 +109,39 @@ struct PreviewSettings: Codable, Equatable {
         imageOffsetY: 0,
         imageScale: 1
     )
+
+    private enum CodingKeys: String, CodingKey {
+        case backgroundMode
+        case isLocked
+        case solidColor
+        case checkerMode
+        case checkerScale
+        case checkerShowsCoordinates
+        case checkerOffsetX
+        case checkerOffsetY
+        case imageAsset
+        case imageOffsetX
+        case imageOffsetY
+        case imageScale
+    }
+}
+
+extension PreviewSettings {
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        backgroundMode = try container.decode(BackgroundMode.self, forKey: .backgroundMode)
+        isLocked = try container.decodeIfPresent(Bool.self, forKey: .isLocked) ?? false
+        solidColor = try container.decode(SRGBAColor.self, forKey: .solidColor)
+        checkerMode = try container.decode(CheckerboardMode.self, forKey: .checkerMode)
+        checkerScale = try container.decode(Double.self, forKey: .checkerScale)
+        checkerShowsCoordinates = try container.decode(Bool.self, forKey: .checkerShowsCoordinates)
+        checkerOffsetX = try container.decode(Double.self, forKey: .checkerOffsetX)
+        checkerOffsetY = try container.decode(Double.self, forKey: .checkerOffsetY)
+        imageAsset = try container.decode(BackgroundImageAsset.self, forKey: .imageAsset)
+        imageOffsetX = try container.decode(Double.self, forKey: .imageOffsetX)
+        imageOffsetY = try container.decode(Double.self, forKey: .imageOffsetY)
+        imageScale = try container.decode(Double.self, forKey: .imageScale)
+    }
 }
 
 enum BackgroundMode: String, Codable, CaseIterable, Identifiable {
