@@ -823,10 +823,7 @@ private struct JSONFileDocument: FileDocument {
 
 @MainActor
 private struct ContentViewPreview: View {
-    @State private var store = ShaderLabStore(
-        document: .defaults,
-        persistsChanges: false
-    )
+    @State private var store = ShaderLabStore()
 
     var body: some View {
         ContentView(store: store)
