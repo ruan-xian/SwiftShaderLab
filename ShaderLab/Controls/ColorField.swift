@@ -70,3 +70,89 @@ struct ColorField: View {
         hexText = parsed.hex
     }
 }
+
+struct HSVColorSliders: View {
+    @Binding var color: SRGBAColor
+    let defaultColor: SRGBAColor
+
+    @State private var hue: Double
+
+    init(color: Binding<SRGBAColor>, defaultColor: SRGBAColor) {
+        _color = color
+        self.defaultColor = defaultColor
+        _hue = State(initialValue: color.wrappedValue.hsv.hue)
+    }
+
+    var body: some View {
+        VStack(spacing: 12) {
+            LabSlider(
+                title: "Hue",
+                value: hueBinding,
+                defaultValue: defaultColor.hsv.hue * 360,
+                range: 0 ... 359,
+                fractionLength: 0,
+                suffix: "°"
+            )
+
+            LabSlider(
+                title: "Saturation",
+                value: saturationBinding,
+                defaultValue: defaultColor.hsv.saturation * 100,
+                range: 0 ... 100,
+                fractionLength: 0,
+                suffix: "%"
+            )
+
+            LabSlider(
+                title: "Value",
+                value: valueBinding,
+                defaultValue: defaultColor.hsv.value * 100,
+                range: 0 ... 100,
+                fractionLength: 0,
+                suffix: "%"
+            )
+        }
+        .onChange(of: color) { _, newColor in
+            let hsv = newColor.hsv
+            if hsv.saturation > 0.000_001 {
+                hue = hsv.hue
+            }
+        }
+    }
+
+    private var hueBinding: Binding<Double> {
+        Binding(
+            get: { hue * 360 },
+            set: { degrees in
+                hue = degrees / 360
+                updateColor(hue: hue)
+            }
+        )
+    }
+
+    private var saturationBinding: Binding<Double> {
+        Binding(
+            get: { color.hsv.saturation * 100 },
+            set: { updateColor(saturation: $0 / 100) }
+        )
+    }
+
+    private var valueBinding: Binding<Double> {
+        Binding(
+            get: { color.hsv.value * 100 },
+            set: { updateColor(value: $0 / 100) }
+        )
+    }
+
+    private func updateColor(
+        hue: Double? = nil,
+        saturation: Double? = nil,
+        value: Double? = nil
+    ) {
+        var hsv = color.hsv
+        hsv.hue = hue ?? self.hue
+        hsv.saturation = saturation ?? hsv.saturation
+        hsv.value = value ?? hsv.value
+        color = SRGBAColor(hsv: hsv)
+    }
+}

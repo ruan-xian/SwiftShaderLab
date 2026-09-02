@@ -432,6 +432,11 @@ private struct PreviewControlsView: View {
                     defaultColor: PreviewSettings.defaults.solidColor
                 )
 
+                HSVColorSliders(
+                    color: $settings.solidColor,
+                    defaultColor: PreviewSettings.defaults.solidColor
+                )
+
             case .checkerboard:
                 placementControls
                 checkerboardControls

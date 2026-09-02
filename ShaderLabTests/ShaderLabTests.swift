@@ -55,6 +55,17 @@ struct ShaderLabTests {
     }
 
     @Test
+    func HSVConversionRoundTripsSRGBAColor() {
+        let source = SRGBAColor(red: 0.27, green: 0.68, blue: 0.42, alpha: 0.8)
+        let roundTrip = SRGBAColor(hsv: source.hsv)
+
+        #expect(abs(roundTrip.red - source.red) < 0.000_001)
+        #expect(abs(roundTrip.green - source.green) < 0.000_001)
+        #expect(abs(roundTrip.blue - source.blue) < 0.000_001)
+        #expect(abs(roundTrip.alpha - source.alpha) < 0.000_001)
+    }
+
+    @Test
     func logarithmicScaleRoundTripsAndRepresentsZero() {
         let range = 0.0 ... 8.0
 

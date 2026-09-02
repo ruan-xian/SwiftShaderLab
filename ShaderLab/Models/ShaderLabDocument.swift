@@ -151,6 +151,13 @@ struct ShaderGradientStop: Codable, Equatable, Identifiable {
     }
 }
 
+struct HSVColor: Equatable {
+    var hue: Double
+    var saturation: Double
+    var value: Double
+    var alpha: Double
+}
+
 struct SRGBAColor: Codable, Equatable {
     var red: Double
     var green: Double
@@ -181,6 +188,26 @@ struct SRGBAColor: Codable, Equatable {
         )
     }
 
+    init(hsv: HSVColor) {
+        let uiColor = UIColor(
+            hue: hsv.hue.clamped(to: 0 ... 1),
+            saturation: hsv.saturation.clamped(to: 0 ... 1),
+            brightness: hsv.value.clamped(to: 0 ... 1),
+            alpha: hsv.alpha.clamped(to: 0 ... 1)
+        )
+        var red: CGFloat = 0
+        var green: CGFloat = 0
+        var blue: CGFloat = 0
+        var alpha: CGFloat = 0
+        uiColor.getRed(&red, green: &green, blue: &blue, alpha: &alpha)
+        self.init(
+            red: Double(red),
+            green: Double(green),
+            blue: Double(blue),
+            alpha: Double(alpha)
+        )
+    }
+
     init?(hex: String) {
         var digits = hex.trimmingCharacters(in: .whitespacesAndNewlines)
         if digits.hasPrefix("#") {
@@ -199,6 +226,25 @@ struct SRGBAColor: Codable, Equatable {
 
     var color: Color {
         Color(.sRGB, red: red, green: green, blue: blue, opacity: alpha)
+    }
+
+    var hsv: HSVColor {
+        var hue: CGFloat = 0
+        var saturation: CGFloat = 0
+        var value: CGFloat = 0
+        var alpha: CGFloat = 0
+        UIColor(color).getHue(
+            &hue,
+            saturation: &saturation,
+            brightness: &value,
+            alpha: &alpha
+        )
+        return HSVColor(
+            hue: Double(hue),
+            saturation: Double(saturation),
+            value: Double(value),
+            alpha: Double(alpha)
+        )
     }
 
     var hex: String {
