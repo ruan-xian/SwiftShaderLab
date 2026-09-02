@@ -1,0 +1,74 @@
+### macOS
+.DS_Store
+
+### Jetbrains
+.idea
+
+# Xcode
+*.xcbkptlist
+.DS_Store
+*.pbxuser
+!default.pbxuser
+*.mode1v3
+!default.mode1v3
+*.mode2v3
+!default.mode2v3
+*.perspectivev3
+!default.perspectivev3
+!default.xcworkspace
+xcuserdata
+*.xccheckout
+# *.html
+*.xcscmblueprint
+*.moved-aside
+DerivedData/
+xcuserdata
+*.xcuserstate
+*~.nib
+*.xcschememanagement.plist
+xcuserdata/**/*
+html/**
+.idea/
+*.gcda
+*.gcno
+*.orig
+fastlane/report.xml
+fastlane/test_output/*
+fastlane/Build
+changelog.txt
+Pods/XcodeCoverage/env.sh
+*.bcsymbolmap
+Cartfile
+Cartfile.resolved
+Carthage/Checkouts
+Carthage/Build/iOS/*.bcsymbolmap
+Carthage/Build/.*.version
+SourcePackages
+
+build/
+.env.secret
+
+*.generated.swift
+
+# VSCode
+.vscode
+
+Pods/
+
+# Claude
+.claude/settings.local.json
+
+# Sweetpad
+buildServer.json
+
+# ryan's config stuff
+.envrc
+CLAUDE.md
+AGENTS.md
+
+# specs
+specs/*
+!specs/.index/
+!specs/.index/**
+swiftformat
+.ryan-bin
