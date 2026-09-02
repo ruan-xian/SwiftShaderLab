@@ -16,7 +16,12 @@ private extension View {
     @ViewBuilder
     func shaderLabWindowSizing() -> some View {
         #if targetEnvironment(macCatalyst)
-            frame(minWidth: 1000, minHeight: 700)
+            frame(
+                minWidth: 1000,
+                maxWidth: .infinity,
+                minHeight: 700,
+                maxHeight: .infinity
+            )
         #else
             self
         #endif
