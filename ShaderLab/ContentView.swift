@@ -210,6 +210,7 @@ private struct PreviewPane: View {
 
     @GestureState private var dragTranslation = CGSize.zero
     @GestureState private var magnification: CGFloat = 1
+    @State private var trackpadTranslation = CGSize.zero
     @FocusState private var editSurfaceFocused: Bool
 
     var body: some View {
@@ -220,15 +221,22 @@ private struct PreviewPane: View {
                     .padding(36)
 
                 if isRepositioningBackground {
-                    Rectangle()
-                        .fill(.clear)
-                        .contentShape(Rectangle())
-                        .gesture(dragGesture(in: geometry.size))
-                        .simultaneousGesture(magnifyGesture)
+                    TrackpadPanSurface(
+                        onChanged: { trackpadTranslation = $0 },
+                        onEnded: { translation in
+                            commitOffset(translation, in: geometry.size)
+                            trackpadTranslation = .zero
+                        },
+                        onCancelled: { trackpadTranslation = .zero }
+                    )
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .contentShape(Rectangle())
+                    .gesture(dragGesture(in: geometry.size))
+                    .simultaneousGesture(magnifyGesture)
 
                     VStack {
                         Label(
-                            "Drag to move · Pinch or use Scale",
+                            "Drag or two-finger pan to move · Pinch or use Scale",
                             systemImage: "arrow.up.and.down.and.arrow.left.and.right"
                         )
                         .font(.caption)
@@ -257,6 +265,9 @@ private struct PreviewPane: View {
         .accessibilityElement(children: .contain)
         .onChange(of: isRepositioningBackground) { _, isRepositioning in
             editSurfaceFocused = isRepositioning
+            if !isRepositioning {
+                trackpadTranslation = .zero
+            }
         }
     }
 
@@ -265,6 +276,11 @@ private struct PreviewPane: View {
         offset(
             settings: &settings,
             by: dragTranslation,
+            in: size
+        )
+        offset(
+            settings: &settings,
+            by: trackpadTranslation,
             in: size
         )
         scale(settings: &settings, by: magnification)
@@ -367,6 +383,84 @@ private struct PreviewPane: View {
             .onEnded { value in
                 commitScale(value.magnification)
             }
+    }
+}
+
+private struct TrackpadPanSurface: UIViewRepresentable {
+    let onChanged: (CGSize) -> Void
+    let onEnded: (CGSize) -> Void
+    let onCancelled: () -> Void
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(
+            onChanged: onChanged,
+            onEnded: onEnded,
+            onCancelled: onCancelled
+        )
+    }
+
+    func makeUIView(context: Context) -> UIView {
+        let view = UIView()
+        view.backgroundColor = .clear
+
+        let recognizer = UIPanGestureRecognizer(
+            target: context.coordinator,
+            action: #selector(Coordinator.handlePan(_:))
+        )
+        recognizer.allowedScrollTypesMask = .continuous
+        recognizer.allowedTouchTypes = []
+        recognizer.cancelsTouchesInView = false
+        recognizer.delegate = context.coordinator
+        view.addGestureRecognizer(recognizer)
+
+        return view
+    }
+
+    func updateUIView(_: UIView, context: Context) {
+        context.coordinator.onChanged = onChanged
+        context.coordinator.onEnded = onEnded
+        context.coordinator.onCancelled = onCancelled
+    }
+
+    final class Coordinator: NSObject, UIGestureRecognizerDelegate {
+        var onChanged: (CGSize) -> Void
+        var onEnded: (CGSize) -> Void
+        var onCancelled: () -> Void
+
+        init(
+            onChanged: @escaping (CGSize) -> Void,
+            onEnded: @escaping (CGSize) -> Void,
+            onCancelled: @escaping () -> Void
+        ) {
+            self.onChanged = onChanged
+            self.onEnded = onEnded
+            self.onCancelled = onCancelled
+        }
+
+        @objc func handlePan(_ recognizer: UIPanGestureRecognizer) {
+            let translation = recognizer.translation(in: recognizer.view)
+            let size = CGSize(width: translation.x, height: translation.y)
+
+            switch recognizer.state {
+            case .began, .changed:
+                onChanged(size)
+            case .ended:
+                onEnded(size)
+            case .cancelled, .failed:
+                onCancelled()
+            case .possible:
+                break
+            @unknown default:
+                onCancelled()
+            }
+        }
+
+        func gestureRecognizer(
+            _: UIGestureRecognizer,
+            shouldRecognizeSimultaneouslyWith _: UIGestureRecognizer
+        ) -> Bool {
+            true
+        }
     }
 }
 
