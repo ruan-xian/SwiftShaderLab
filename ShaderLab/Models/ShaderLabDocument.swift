@@ -96,7 +96,7 @@ struct PreviewSettings: Codable, Equatable {
     static let defaults = PreviewSettings(
         backgroundMode: .solid,
         solidColor: SRGBAColor(red: 0.13, green: 0.13, blue: 0.15),
-        checkerMode: .rainbowBlack,
+        checkerMode: .blackWhite,
         checkerScale: 96,
         checkerShowsCoordinates: false,
         checkerOffsetX: 0,
