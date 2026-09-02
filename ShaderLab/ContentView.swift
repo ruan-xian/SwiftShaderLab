@@ -85,7 +85,7 @@ struct ContentView: View {
             Divider()
 
             VStack(spacing: 0) {
-                if isPreviewControlsExpanded {
+                ZStack(alignment: .bottom) {
                     ScrollView {
                         PreviewControlsView(
                             settings: $store.document.preview,
@@ -93,12 +93,15 @@ struct ContentView: View {
                         )
                         .padding(16)
                     }
-                    .frame(maxHeight: 360)
-                    .transition(.move(edge: .bottom).combined(with: .opacity))
+                    .frame(height: 360)
+                    .offset(y: isPreviewControlsExpanded ? 0 : 360)
                 }
+                .frame(height: isPreviewControlsExpanded ? 360 : 0, alignment: .bottom)
+                .clipped()
+                .allowsHitTesting(isPreviewControlsExpanded)
 
                 Button {
-                    withAnimation(.easeInOut(duration: 0.25)) {
+                    withAnimation(.easeInOut(duration: 0.3)) {
                         isPreviewControlsExpanded.toggle()
                     }
                 } label: {
