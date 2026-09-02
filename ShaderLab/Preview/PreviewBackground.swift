@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 struct PreviewBackground: View {
     let settings: PreviewSettings
@@ -13,16 +14,28 @@ struct PreviewBackground: View {
             CheckerboardBackground(
                 tileSize: settings.checkerScale,
                 mode: settings.checkerMode,
-                showsCoordinates: settings.checkerShowsCoordinates
+                showsCoordinates: settings.checkerShowsCoordinates,
+                offsetX: settings.checkerOffsetX,
+                offsetY: settings.checkerOffsetY
             )
 
         case .image:
             GeometryReader { geometry in
-                Image("PreviewBackground")
-                    .resizable()
-                    .scaledToFill()
-                    .frame(width: geometry.size.width, height: geometry.size.height)
-                    .clipped()
+                ZStack {
+                    Color(uiColor: .systemBackground)
+
+                    Image("PreviewBackground")
+                        .resizable()
+                        .scaledToFill()
+                        .frame(width: geometry.size.width, height: geometry.size.height)
+                        .scaleEffect(settings.imageScale)
+                        .offset(
+                            x: CGFloat(settings.imageOffsetX) * geometry.size.width,
+                            y: CGFloat(settings.imageOffsetY) * geometry.size.height
+                        )
+                }
+                .frame(width: geometry.size.width, height: geometry.size.height)
+                .clipped()
             }
         }
     }
@@ -32,12 +45,20 @@ private struct CheckerboardBackground: View {
     let tileSize: Double
     let mode: CheckerboardMode
     let showsCoordinates: Bool
+    let offsetX: Double
+    let offsetY: Double
 
     var body: some View {
         Canvas { context, size in
             let tileSize = max(CGFloat(tileSize), 1)
-            let columns = Int(ceil(size.width / tileSize))
-            let rows = Int(ceil(size.height / tileSize))
+            let offset = CGPoint(
+                x: CGFloat(offsetX) * size.width,
+                y: CGFloat(offsetY) * size.height
+            )
+            let firstColumn = Int(floor(-offset.x / tileSize)) - 1
+            let lastColumn = Int(ceil((size.width - offset.x) / tileSize)) + 1
+            let firstRow = Int(floor(-offset.y / tileSize)) - 1
+            let lastRow = Int(ceil((size.height - offset.y) / tileSize)) + 1
             let baseColor: Color = mode == .rainbowBlack ? .black : .white
             let rainbow = GraphicsContext.Shading.linearGradient(
                 Gradient(colors: [.red, .orange, .yellow, .green, .blue, .purple]),
@@ -50,12 +71,12 @@ private struct CheckerboardBackground: View {
 
             context.fill(Path(CGRect(origin: .zero, size: size)), with: .color(baseColor))
 
-            for row in 0 ..< rows {
-                for column in 0 ..< columns {
+            for row in firstRow ... lastRow {
+                for column in firstColumn ... lastColumn {
                     let isPrimaryTile = (row + column).isMultiple(of: 2)
                     let rect = CGRect(
-                        x: CGFloat(column) * tileSize,
-                        y: CGFloat(row) * tileSize,
+                        x: CGFloat(column) * tileSize + offset.x,
+                        y: CGFloat(row) * tileSize + offset.y,
                         width: tileSize,
                         height: tileSize
                     )

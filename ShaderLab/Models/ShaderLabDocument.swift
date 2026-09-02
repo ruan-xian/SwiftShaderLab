@@ -26,6 +26,7 @@ struct ShaderLabDocument: Codable, Equatable {
         result.shader.speed = result.shader.speed.clamped(to: 0 ... 8)
         result.shader.gradientStops = GradientRules.sanitized(result.shader.gradientStops)
         result.preview.checkerScale = result.preview.checkerScale.clamped(to: 12 ... 600)
+        result.preview.imageScale = result.preview.imageScale.clamped(to: 0.25 ... 4)
         return result
     }
 
@@ -86,13 +87,23 @@ struct PreviewSettings: Codable, Equatable {
     var checkerMode: CheckerboardMode
     var checkerScale: Double
     var checkerShowsCoordinates: Bool
+    var checkerOffsetX: Double
+    var checkerOffsetY: Double
+    var imageOffsetX: Double
+    var imageOffsetY: Double
+    var imageScale: Double
 
     static let defaults = PreviewSettings(
         backgroundMode: .solid,
         solidColor: SRGBAColor(red: 0.13, green: 0.13, blue: 0.15),
         checkerMode: .rainbowBlack,
         checkerScale: 96,
-        checkerShowsCoordinates: false
+        checkerShowsCoordinates: false,
+        checkerOffsetX: 0,
+        checkerOffsetY: 0,
+        imageOffsetX: 0,
+        imageOffsetY: 0,
+        imageScale: 1
     )
 }
 

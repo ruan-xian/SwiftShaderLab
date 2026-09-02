@@ -18,13 +18,18 @@ struct ContentView: View {
     @State private var isExporting = false
     @State private var exportDocument = JSONFileDocument(data: Data())
     @State private var statusMessage: String?
+    @State private var isRepositioningBackground = false
 
     var body: some View {
         GeometryReader { geometry in
             if geometry.size.width >= 900 {
                 HStack(spacing: 0) {
-                    PreviewPane(document: store.document)
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    PreviewPane(
+                        shaderSettings: store.document.shader,
+                        previewSettings: $store.document.preview,
+                        isRepositioningBackground: $isRepositioningBackground
+                    )
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
 
                     Divider()
 
@@ -33,8 +38,12 @@ struct ContentView: View {
                 }
             } else {
                 VStack(spacing: 0) {
-                    PreviewPane(document: store.document)
-                        .frame(minHeight: 300)
+                    PreviewPane(
+                        shaderSettings: store.document.shader,
+                        previewSettings: $store.document.preview,
+                        isRepositioningBackground: $isRepositioningBackground
+                    )
+                    .frame(minHeight: 300)
 
                     Divider()
 
@@ -44,6 +53,14 @@ struct ContentView: View {
             }
         }
         .background(Color(uiColor: .systemBackground))
+        .onChange(of: selectedTab) { _, tab in
+            if tab != .preview {
+                isRepositioningBackground = false
+            }
+        }
+        .onChange(of: store.document.preview.backgroundMode) {
+            isRepositioningBackground = false
+        }
         .fileImporter(isPresented: $isImporting, allowedContentTypes: [.json]) {
             importSettings(from: $0)
         }
@@ -104,6 +121,7 @@ struct ContentView: View {
                 Spacer()
 
                 Button("Reset", systemImage: "arrow.counterclockwise", role: .destructive) {
+                    isRepositioningBackground = false
                     store.reset()
                     statusMessage = "Defaults restored"
                 }
@@ -136,7 +154,10 @@ struct ContentView: View {
             )
 
         case .preview:
-            PreviewControlsView(settings: $store.document.preview)
+            PreviewControlsView(
+                settings: $store.document.preview,
+                isRepositioningBackground: $isRepositioningBackground
+            )
         }
     }
 
@@ -172,6 +193,7 @@ struct ContentView: View {
                 }
             }
             try store.importData(Data(contentsOf: url))
+            isRepositioningBackground = false
             statusMessage = "Settings imported"
         } catch let error as CocoaError where error.code == .userCancelled {
             statusMessage = "Import cancelled"
@@ -182,16 +204,169 @@ struct ContentView: View {
 }
 
 private struct PreviewPane: View {
-    let document: ShaderLabDocument
+    let shaderSettings: ShaderSettings
+    @Binding var previewSettings: PreviewSettings
+    @Binding var isRepositioningBackground: Bool
+
+    @GestureState private var dragTranslation = CGSize.zero
+    @GestureState private var magnification: CGFloat = 1
+    @FocusState private var editSurfaceFocused: Bool
 
     var body: some View {
-        ZStack {
-            PreviewBackground(settings: document.preview)
-            ShaderPreviewView(settings: document.shader)
-                .padding(36)
+        GeometryReader { geometry in
+            ZStack {
+                PreviewBackground(settings: displayedSettings(in: geometry.size))
+                ShaderPreviewView(settings: shaderSettings)
+                    .padding(36)
+
+                if isRepositioningBackground {
+                    Rectangle()
+                        .fill(.clear)
+                        .contentShape(Rectangle())
+                        .gesture(dragGesture(in: geometry.size))
+                        .simultaneousGesture(magnifyGesture)
+
+                    VStack {
+                        Label(
+                            "Drag to move · Pinch or use Scale",
+                            systemImage: "arrow.up.and.down.and.arrow.left.and.right"
+                        )
+                        .font(.caption)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 7)
+                        .background(.regularMaterial, in: Capsule())
+                        .padding(12)
+
+                        Spacer()
+                    }
+                    .allowsHitTesting(false)
+
+                    Rectangle()
+                        .stroke(.tint, lineWidth: 2)
+                        .allowsHitTesting(false)
+                }
+            }
+            .contentShape(Rectangle())
+            .focusable(isRepositioningBackground)
+            .focused($editSurfaceFocused)
+            .onKeyPress(phases: [.down, .repeat]) { keyPress in
+                handleKeyPress(keyPress, in: geometry.size)
+            }
         }
         .clipped()
         .accessibilityElement(children: .contain)
+        .onChange(of: isRepositioningBackground) { _, isRepositioning in
+            editSurfaceFocused = isRepositioning
+        }
+    }
+
+    private func displayedSettings(in size: CGSize) -> PreviewSettings {
+        var settings = previewSettings
+        offset(
+            settings: &settings,
+            by: dragTranslation,
+            in: size
+        )
+        scale(settings: &settings, by: magnification)
+        return settings
+    }
+
+    private func offset(
+        settings: inout PreviewSettings,
+        by translation: CGSize,
+        in size: CGSize
+    ) {
+        guard size.width > 0, size.height > 0 else { return }
+        let x = Double(translation.width / size.width)
+        let y = Double(translation.height / size.height)
+
+        switch settings.backgroundMode {
+        case .solid:
+            break
+        case .checkerboard:
+            settings.checkerOffsetX += x
+            settings.checkerOffsetY += y
+        case .image:
+            settings.imageOffsetX += x
+            settings.imageOffsetY += y
+        }
+    }
+
+    private func scale(settings: inout PreviewSettings, by magnification: CGFloat) {
+        let magnification = Double(magnification)
+        switch settings.backgroundMode {
+        case .solid:
+            break
+        case .checkerboard:
+            settings.checkerScale = (settings.checkerScale * magnification)
+                .clamped(to: 12 ... 600)
+        case .image:
+            settings.imageScale = (settings.imageScale * magnification)
+                .clamped(to: 0.25 ... 4)
+        }
+    }
+
+    private func commitOffset(_ translation: CGSize, in size: CGSize) {
+        var settings = previewSettings
+        offset(settings: &settings, by: translation, in: size)
+        previewSettings = settings
+    }
+
+    private func commitScale(_ magnification: CGFloat) {
+        var settings = previewSettings
+        scale(settings: &settings, by: magnification)
+        previewSettings = settings
+    }
+
+    private func nudge(by translation: CGSize, in size: CGSize) {
+        commitOffset(translation, in: size)
+    }
+
+    private func handleKeyPress(_ keyPress: KeyPress, in size: CGSize) -> KeyPress.Result {
+        guard isRepositioningBackground else { return .ignored }
+
+        if keyPress.key == .escape {
+            isRepositioningBackground = false
+            return .handled
+        }
+
+        let distance: CGFloat = keyPress.modifiers.contains(.shift) ? 10 : 1
+        let translation: CGSize
+        switch keyPress.key {
+        case .leftArrow:
+            translation = CGSize(width: -distance, height: 0)
+        case .rightArrow:
+            translation = CGSize(width: distance, height: 0)
+        case .upArrow:
+            translation = CGSize(width: 0, height: -distance)
+        case .downArrow:
+            translation = CGSize(width: 0, height: distance)
+        default:
+            return .ignored
+        }
+
+        nudge(by: translation, in: size)
+        return .handled
+    }
+
+    private func dragGesture(in size: CGSize) -> some Gesture {
+        DragGesture(minimumDistance: 0)
+            .updating($dragTranslation) { value, state, _ in
+                state = value.translation
+            }
+            .onEnded { value in
+                commitOffset(value.translation, in: size)
+            }
+    }
+
+    private var magnifyGesture: some Gesture {
+        MagnifyGesture()
+            .updating($magnification) { value, state, _ in
+                state = value.magnification
+            }
+            .onEnded { value in
+                commitScale(value.magnification)
+            }
     }
 }
 
@@ -233,6 +408,7 @@ private struct ShaderControlsView: View {
 
 private struct PreviewControlsView: View {
     @Binding var settings: PreviewSettings
+    @Binding var isRepositioningBackground: Bool
 
     var body: some View {
         VStack(spacing: 16) {
@@ -257,9 +433,12 @@ private struct PreviewControlsView: View {
                 )
 
             case .checkerboard:
+                placementControls
                 checkerboardControls
 
             case .image:
+                placementControls
+
                 Text("Replace PreviewBackground.png in Assets.xcassets to customize this preset.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -284,15 +463,108 @@ private struct PreviewControlsView: View {
             }
 
             Toggle("Number tiles", isOn: $settings.checkerShowsCoordinates)
+        }
+    }
+
+    private var placementControls: some View {
+        VStack(spacing: 12) {
+            HStack(spacing: 8) {
+                Text("Placement")
+
+                Spacer()
+
+                Button("Center", systemImage: "scope") {
+                    centerBackground()
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+                .disabled(isBackgroundCentered)
+
+                Button(
+                    isRepositioningBackground ? "Done" : "Reposition",
+                    systemImage: isRepositioningBackground
+                        ? "checkmark"
+                        : "arrow.up.and.down.and.arrow.left.and.right"
+                ) {
+                    isRepositioningBackground.toggle()
+                }
+                .buttonStyle(.borderedProminent)
+                .controlSize(.small)
+            }
 
             LabSlider(
-                title: "Checker scale",
-                value: $settings.checkerScale,
-                defaultValue: PreviewSettings.defaults.checkerScale,
-                range: 12 ... 600,
+                title: "Scale",
+                value: backgroundScale,
+                defaultValue: backgroundScaleDefault,
+                range: backgroundScaleRange,
                 fractionLength: 0,
+                suffix: settings.backgroundMode == .image ? "%" : "pt",
                 scale: .logarithmic
             )
+
+            Text("Reposition enables dragging, arrow-key nudging, and trackpad pinch in the preview.")
+                .foregroundStyle(.secondary)
+                .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+
+    private var backgroundScale: Binding<Double> {
+        switch settings.backgroundMode {
+        case .solid:
+            .constant(1)
+        case .checkerboard:
+            $settings.checkerScale
+        case .image:
+            Binding(
+                get: { settings.imageScale * 100 },
+                set: { settings.imageScale = $0 / 100 }
+            )
+        }
+    }
+
+    private var backgroundScaleDefault: Double {
+        switch settings.backgroundMode {
+        case .solid:
+            1
+        case .checkerboard:
+            PreviewSettings.defaults.checkerScale
+        case .image:
+            PreviewSettings.defaults.imageScale * 100
+        }
+    }
+
+    private var backgroundScaleRange: ClosedRange<Double> {
+        switch settings.backgroundMode {
+        case .solid:
+            1 ... 1
+        case .checkerboard:
+            12 ... 600
+        case .image:
+            25 ... 400
+        }
+    }
+
+    private var isBackgroundCentered: Bool {
+        switch settings.backgroundMode {
+        case .solid:
+            true
+        case .checkerboard:
+            settings.checkerOffsetX == 0 && settings.checkerOffsetY == 0
+        case .image:
+            settings.imageOffsetX == 0 && settings.imageOffsetY == 0
+        }
+    }
+
+    private func centerBackground() {
+        switch settings.backgroundMode {
+        case .solid:
+            break
+        case .checkerboard:
+            settings.checkerOffsetX = 0
+            settings.checkerOffsetY = 0
+        case .image:
+            settings.imageOffsetX = 0
+            settings.imageOffsetY = 0
         }
     }
 }

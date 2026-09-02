@@ -15,7 +15,7 @@ The preview renderer receives only `ShaderSettings`. Backgrounds and other lab-o
 
 - Linear and zero-aware logarithmic sliders with reset buttons.
 - A two-to-four-stop gradient editor with draggable stops, hex entry, and interpolated insertion.
-- Solid, checkerboard, and replaceable image backgrounds. Replace `PreviewBackground.png` in the asset catalog to change the image preset.
+- Solid, checkerboard, and replaceable image backgrounds. Checkerboard and image placement support click-drag panning, trackpad pinch, keyboard nudging, and inspector scaling. Replace `PreviewBackground.png` in the asset catalog to change the image preset.
 - Local autosave, reset, JSON import/export, and JSON clipboard copying.
 
 `schemaVersion` is currently `1`. If the settings shape changes after JSON files have been shared, add an explicit decoding migration before incrementing it.

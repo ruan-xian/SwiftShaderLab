@@ -18,6 +18,33 @@ struct ShaderLabTests {
     }
 
     @Test
+    func backgroundPlacementsRoundTripIndependently() throws {
+        var document = ShaderLabDocument.defaults
+        document.preview.checkerOffsetX = 0.2
+        document.preview.checkerOffsetY = -0.35
+        document.preview.checkerScale = 144
+        document.preview.imageOffsetX = -0.6
+        document.preview.imageOffsetY = 0.45
+        document.preview.imageScale = 2.25
+
+        let decoded = try ShaderLabDocument.decodeJSON(document.jsonData())
+
+        #expect(decoded.preview == document.preview)
+    }
+
+    @Test
+    func importedBackgroundScalesAreClamped() throws {
+        var document = ShaderLabDocument.defaults
+        document.preview.checkerScale = 1000
+        document.preview.imageScale = 0.1
+
+        let decoded = try ShaderLabDocument.decodeJSON(document.jsonData())
+
+        #expect(decoded.preview.checkerScale == 600)
+        #expect(decoded.preview.imageScale == 0.25)
+    }
+
+    @Test
     func hexParsingNormalizesShortAndLongForms() throws {
         let short = try #require(SRGBAColor(hex: "#3af"))
         let long = try #require(SRGBAColor(hex: "33AAFF"))
