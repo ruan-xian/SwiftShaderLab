@@ -596,7 +596,6 @@ private struct ContentViewPreview: View {
 
     var body: some View {
         ContentView(store: store)
-            .frame(width: 1100, height: 760)
     }
 }
 
