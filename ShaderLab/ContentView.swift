@@ -825,16 +825,3 @@ private struct JSONFileDocument: FileDocument {
         FileWrapper(regularFileWithContents: data)
     }
 }
-
-@MainActor
-private struct ContentViewPreview: View {
-    @State private var store = ShaderLabStore()
-
-    var body: some View {
-        ContentView(store: store)
-    }
-}
-
-#Preview("Shader Lab") {
-    ContentViewPreview()
-}
