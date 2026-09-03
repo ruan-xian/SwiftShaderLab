@@ -56,13 +56,28 @@ struct LabSlider: View {
         scale == .linear ? range : 0 ... 1
     }
 
+    private var inputBinding: Binding<Double> {
+        Binding(
+            get: { value },
+            set: { value = $0.clamped(to: range) }
+        )
+    }
+
     var body: some View {
         VStack(spacing: 6) {
             HStack {
                 Text(title)
                 Spacer()
-                Text(value, format: .number.precision(.fractionLength(fractionLength)))
-                    .monospacedDigit()
+                TextField(
+                    title,
+                    value: inputBinding,
+                    format: .number.precision(.fractionLength(fractionLength))
+                )
+                .textFieldStyle(.roundedBorder)
+                .multilineTextAlignment(.trailing)
+                .frame(width: fractionLength == 0 ? 52 : 72)
+                .monospacedDigit()
+                .accessibilityLabel("\(title) value")
                 if !suffix.isEmpty {
                     Text(suffix)
                         .foregroundStyle(.secondary)
