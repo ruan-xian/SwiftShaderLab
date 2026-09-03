@@ -70,6 +70,7 @@ struct ContentView: View {
                 shaderSettings: store.document.shader,
                 previewSettings: $store.document.preview
             )
+            .environment(\.colorScheme, store.document.preview.isDarkMode ? .dark : .light)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
 
             Divider()
@@ -547,6 +548,14 @@ private struct PreviewControlsView: View {
 
     var body: some View {
         VStack(spacing: 16) {
+            Toggle(isOn: $settings.isDarkMode) {
+                Label(
+                    "Dark Mode",
+                    systemImage: settings.isDarkMode ? "moon.fill" : "sun.max.fill"
+                )
+            }
+            .accessibilityValue(settings.isDarkMode ? "Dark" : "Light")
+
             HStack {
                 Text("Background")
                 Spacer()

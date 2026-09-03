@@ -82,6 +82,7 @@ struct ShaderSettings: Codable, Equatable {
 }
 
 struct PreviewSettings: Codable, Equatable {
+    var isDarkMode: Bool
     var backgroundMode: BackgroundMode
     var isLocked: Bool
     var solidColor: SRGBAColor
@@ -96,6 +97,7 @@ struct PreviewSettings: Codable, Equatable {
     var imageScale: Double
 
     static let defaults = PreviewSettings(
+        isDarkMode: false,
         backgroundMode: .solid,
         isLocked: false,
         solidColor: SRGBAColor(red: 0.13, green: 0.13, blue: 0.15),
@@ -111,6 +113,7 @@ struct PreviewSettings: Codable, Equatable {
     )
 
     private enum CodingKeys: String, CodingKey {
+        case isDarkMode
         case backgroundMode
         case isLocked
         case solidColor
@@ -129,6 +132,7 @@ struct PreviewSettings: Codable, Equatable {
 extension PreviewSettings {
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
+        isDarkMode = try container.decodeIfPresent(Bool.self, forKey: .isDarkMode) ?? false
         backgroundMode = try container.decode(BackgroundMode.self, forKey: .backgroundMode)
         isLocked = try container.decodeIfPresent(Bool.self, forKey: .isLocked) ?? false
         solidColor = try container.decode(SRGBAColor.self, forKey: .solidColor)

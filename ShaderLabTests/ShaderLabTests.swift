@@ -20,6 +20,7 @@ struct ShaderLabTests {
     @Test
     func backgroundPlacementsRoundTripIndependently() throws {
         var document = ShaderLabDocument.defaults
+        document.preview.isDarkMode = true
         document.preview.isLocked = true
         document.preview.checkerOffsetX = 0.2
         document.preview.checkerOffsetY = -0.35
