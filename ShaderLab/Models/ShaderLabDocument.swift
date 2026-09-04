@@ -40,10 +40,10 @@ struct ShaderLabDocument: Codable, Equatable {
             throw ShaderLabDocumentError.unsupportedSchemaVersion(schemaVersion)
         }
 
-        self.init(
+        try self.init(
             schemaVersion: schemaVersion,
-            shader: try container.decode(ShaderSettings.self, forKey: .shader),
-            preview: try container.decode(PreviewSettings.self, forKey: .preview)
+            shader: container.decode(ShaderSettings.self, forKey: .shader),
+            preview: container.decode(PreviewSettings.self, forKey: .preview)
         )
     }
 

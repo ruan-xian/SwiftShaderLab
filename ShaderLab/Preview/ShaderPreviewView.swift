@@ -54,7 +54,7 @@ struct ShaderPreviewView: View {
     private func finiteSamples(_ samples: [Float]) -> [Float] {
         samples.map { sample in
             guard sample.isFinite else { return 0 }
-            return min(max(sample, -10_000), 10_000)
+            return min(max(sample, -10000), 10000)
         }
     }
 }

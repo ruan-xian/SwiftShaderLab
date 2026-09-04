@@ -25,7 +25,7 @@ struct ContentView: View {
             if geometry.size.width >= 900 {
                 HStack(spacing: 0) {
                     previewPanel
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
 
                     Divider()
 
@@ -35,7 +35,7 @@ struct ContentView: View {
             } else {
                 VStack(spacing: 0) {
                     previewPanel
-                    .frame(minHeight: 300)
+                        .frame(minHeight: 300)
 
                     Divider()
 
@@ -80,7 +80,7 @@ struct ContentView: View {
                 ZStack(alignment: .bottom) {
                     ScrollView {
                         PreviewControlsView(settings: $store.document.preview)
-                        .padding(16)
+                            .padding(16)
                     }
                     .frame(height: 360)
                     .offset(y: isPreviewControlsExpanded ? 0 : 360)
