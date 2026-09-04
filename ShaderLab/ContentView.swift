@@ -130,7 +130,7 @@ struct ContentView: View {
 
                     Toggle(isOn: $store.document.preview.isLocked) {
                         Image(
-                            systemImage: store.document.preview.isLocked ? "lock.fill" : "lock.open"
+                            systemName: store.document.preview.isLocked ? "lock.fill" : "lock.open"
                         )
                     }
                     .toggleStyle(.button)
