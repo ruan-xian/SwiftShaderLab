@@ -25,7 +25,7 @@ struct ShaderLabDocument: Codable, Equatable {
         result.shader.scale = result.shader.scale.clamped(to: 0.01 ... 100)
         result.shader.speed = result.shader.speed.clamped(to: 0 ... 8)
         result.shader.gradientStops = GradientRules.sanitized(result.shader.gradientStops)
-        result.preview.subjectScale = result.preview.subjectScale.clamped(to: 0.25 ... 2)
+        result.preview.subjectScale = result.preview.subjectScale.clamped(to: 0.1 ... 2)
         result.preview.checkerScale = result.preview.checkerScale.clamped(to: 12 ... 600)
         result.preview.imageScale = result.preview.imageScale.clamped(to: 0.25 ... 4)
         return result

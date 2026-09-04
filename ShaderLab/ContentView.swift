@@ -103,7 +103,7 @@ struct ContentView: View {
 
                     Slider(
                         value: $store.document.preview.subjectScale,
-                        in: 0.25 ... 2,
+                        in: 0.1 ... 2,
                         step: 0.05
                     )
                     .frame(minWidth: 64, idealWidth: 120, maxWidth: 160)
