@@ -220,6 +220,38 @@ struct ShaderLabTests {
         #expect(table.samples == [0, 0.25, 0.5, 0.75, 1])
     }
 
+    @Test
+    func bezierDerivativeEvaluatesSegmentsAndEndpointTangents() throws {
+        let curve = linearBezierCurve()
+        let leftExtension = try #require(curve.derivative(at: 0))
+        let midpoint = try #require(curve.derivative(at: 0.5))
+        let rightExtension = try #require(curve.derivative(at: 1))
+
+        #expect(abs(leftExtension - 1) < 0.000_001)
+        #expect(abs(midpoint - 1) < 0.000_001)
+        #expect(abs(rightExtension - 1) < 0.000_001)
+    }
+
+    @Test
+    func bezierDerivativeUsesZeroForVerticalTangents() throws {
+        var curve = linearBezierCurve()
+        curve.points[0].incomingHandle = BezierCoordinate(x: 0.2, y: -1)
+        curve.points[0].outgoingHandle = BezierCoordinate(x: 0.2, y: 1)
+        let extensionDerivative = try #require(curve.derivative(at: 0))
+        let segmentDerivative = try #require(curve.derivative(at: 0.2))
+
+        #expect(extensionDerivative == 0)
+        #expect(segmentDerivative == 0)
+    }
+
+    @Test
+    func bezierDerivativeLookupTableIsGeneratedOnlyWhenRequested() {
+        let table = linearBezierCurve().derivativeLookupTable(in: 0 ... 1, sampleCount: 5)
+
+        #expect(table.inputRange == (0 ... 1))
+        #expect(table.samples == [1, 1, 1, 1, 1])
+    }
+
     @Test @MainActor
     func malformedImportDoesNotReplaceCurrentDocument() {
         var document = ShaderLabDocument.defaults

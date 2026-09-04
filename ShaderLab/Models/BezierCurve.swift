@@ -63,6 +63,7 @@ struct BezierCurveLookupTable: Equatable, Sendable {
 struct BezierCurve: Codable, Equatable, Sendable {
     var points: [BezierAnchor]
 
+    /// Evaluates the function value. Curve data should be sanitized before evaluation.
     func value(at input: Double) -> Double? {
         guard let first = points.first else { return nil }
         guard points.count > 1, let last = points.last else { return first.position.y }
@@ -103,6 +104,53 @@ struct BezierCurve: Codable, Equatable, Sendable {
         return last.position.y
     }
 
+    /// Evaluates dy/dx without adding work to value-only evaluation.
+    /// A vertical or effectively vertical tangent returns zero.
+    func derivative(at input: Double) -> Double? {
+        guard let first = points.first else { return nil }
+        guard points.count > 1, let last = points.last else { return 0 }
+
+        if input < first.position.x {
+            return tangentSlope(anchor: first.position, handle: first.incomingHandle)
+        }
+        if input > last.position.x {
+            return tangentSlope(anchor: last.position, handle: last.outgoingHandle)
+        }
+
+        let finalSegmentStart = points.index(points.endIndex, offsetBy: -2)
+        for index in points.indices.dropLast() {
+            let start = points[index]
+            let end = points[index + 1]
+            let isFinalSegment = index == finalSegmentStart
+            guard input < end.position.x || isFinalSegment else { continue }
+            let progress = parameter(
+                for: input,
+                start: start.position.x,
+                control1: start.outgoingHandle.x,
+                control2: end.incomingHandle.x,
+                end: end.position.x
+            )
+            let deltaX = cubicDerivative(
+                progress,
+                start.position.x,
+                start.outgoingHandle.x,
+                end.incomingHandle.x,
+                end.position.x
+            )
+            guard abs(deltaX) > 0.000_000_001 else { return 0 }
+            let deltaY = cubicDerivative(
+                progress,
+                start.position.y,
+                start.outgoingHandle.y,
+                end.incomingHandle.y,
+                end.position.y
+            )
+            return deltaY / deltaX
+        }
+
+        return 0
+    }
+
     func lookupTable(
         in inputRange: ClosedRange<Double>,
         sampleCount: Int
@@ -120,6 +168,23 @@ struct BezierCurve: Codable, Equatable, Sendable {
         )
     }
 
+    func derivativeLookupTable(
+        in inputRange: ClosedRange<Double>,
+        sampleCount: Int
+    ) -> BezierCurveLookupTable {
+        let count = max(sampleCount, 2)
+        let width = inputRange.upperBound - inputRange.lowerBound
+        let samples = (0 ..< count).map { index in
+            let progress = Double(index) / Double(count - 1)
+            let input = inputRange.lowerBound + width * progress
+            return Float(derivative(at: input) ?? 0)
+        }
+        return BezierCurveLookupTable(
+            inputRange: Float(inputRange.lowerBound) ... Float(inputRange.upperBound),
+            samples: samples
+        )
+    }
+
     private func tangentValue(
         at input: Double,
         anchor: BezierCoordinate,
@@ -129,6 +194,15 @@ struct BezierCurve: Codable, Equatable, Sendable {
         guard abs(deltaX) > 0.000_000_001 else { return anchor.y }
         let slope = (handle.y - anchor.y) / deltaX
         return anchor.y + slope * (input - anchor.x)
+    }
+
+    private func tangentSlope(
+        anchor: BezierCoordinate,
+        handle: BezierCoordinate
+    ) -> Double {
+        let deltaX = handle.x - anchor.x
+        guard abs(deltaX) > 0.000_000_001 else { return 0 }
+        return (handle.y - anchor.y) / deltaX
     }
 
     private func parameter(
@@ -163,6 +237,19 @@ struct BezierCurve: Codable, Equatable, Sendable {
             + 3 * inverse * inverse * progress * control1
             + 3 * inverse * progress * progress * control2
             + progress * progress * progress * end
+    }
+
+    private func cubicDerivative(
+        _ progress: Double,
+        _ start: Double,
+        _ control1: Double,
+        _ control2: Double,
+        _ end: Double
+    ) -> Double {
+        let inverse = 1 - progress
+        return 3 * inverse * inverse * (control1 - start)
+            + 6 * inverse * progress * (control2 - control1)
+            + 3 * progress * progress * (end - control2)
     }
 }
 
