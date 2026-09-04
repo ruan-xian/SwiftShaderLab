@@ -45,6 +45,8 @@ struct ShaderPreviewView: View {
                 }
                 .frame(width: side, height: side)
                 .scaleEffect(settings.scale.clamped(to: 0.2 ... 1.6))
+                // SwiftUI uses screen coordinates, so negate the mathematical CCW angle.
+                .rotationEffect(.degrees(-settings.angleDegrees))
                 .rotationEffect(.radians(sin(phase) * 0.08))
                 .shadow(color: .black.opacity(0.28), radius: side * 0.08, y: side * 0.04)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)

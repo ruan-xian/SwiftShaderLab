@@ -24,6 +24,7 @@ struct ShaderLabDocument: Codable, Equatable {
         result.shader.intensity = result.shader.intensity.clamped(to: 0 ... 2)
         result.shader.scale = result.shader.scale.clamped(to: 0.01 ... 100)
         result.shader.speed = result.shader.speed.clamped(to: 0 ... 8)
+        result.shader.angleDegrees = AngleRules.normalizedDegrees(result.shader.angleDegrees)
         result.shader.gradientStops = GradientRules.sanitized(result.shader.gradientStops)
         result.shader.bezierCurves.easing = BezierCurveRules.sanitized(
             result.shader.bezierCurves.easing,
@@ -76,6 +77,7 @@ struct ShaderSettings: Codable, Equatable {
     var intensity: Double
     var scale: Double
     var speed: Double
+    var angleDegrees: Double
     var gradientStops: [ShaderGradientStop]
     var bezierCurves: BezierCurveExamples
 
@@ -83,6 +85,7 @@ struct ShaderSettings: Codable, Equatable {
         intensity: 0.85,
         scale: 1,
         speed: 0.5,
+        angleDegrees: 0,
         gradientStops: [
             ShaderGradientStop(
                 location: 0,
@@ -104,6 +107,7 @@ struct ShaderSettings: Codable, Equatable {
         case intensity
         case scale
         case speed
+        case angleDegrees
         case gradientStops
         case bezierCurves
     }
@@ -115,6 +119,7 @@ extension ShaderSettings {
         intensity = try container.decode(Double.self, forKey: .intensity)
         scale = try container.decode(Double.self, forKey: .scale)
         speed = try container.decode(Double.self, forKey: .speed)
+        angleDegrees = try container.decodeIfPresent(Double.self, forKey: .angleDegrees) ?? 0
         gradientStops = try container.decode([ShaderGradientStop].self, forKey: .gradientStops)
         bezierCurves = try container.decodeIfPresent(
             BezierCurveExamples.self,

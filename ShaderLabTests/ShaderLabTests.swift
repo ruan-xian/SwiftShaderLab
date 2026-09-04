@@ -107,11 +107,23 @@ struct ShaderLabTests {
         var object = try #require(JSONSerialization.jsonObject(with: data) as? [String: Any])
         var shader = try #require(object["shader"] as? [String: Any])
         shader.removeValue(forKey: "bezierCurves")
+        shader.removeValue(forKey: "angleDegrees")
         object["shader"] = shader
 
         let decoded = try ShaderLabDocument.decodeJSON(JSONSerialization.data(withJSONObject: object))
 
         #expect(decoded.shader.bezierCurves == .defaults)
+        #expect(decoded.shader.angleDegrees == 0)
+    }
+
+    @Test
+    func angleNormalizationUsesMathematicalDegrees() {
+        #expect(AngleRules.normalizedDegrees(0) == 0)
+        #expect(AngleRules.normalizedDegrees(90) == 90)
+        #expect(AngleRules.normalizedDegrees(450) == 90)
+        #expect(AngleRules.normalizedDegrees(-90) == 270)
+        #expect(AngleRules.normalizedDegrees(-360) == 0)
+        #expect(AngleRules.normalizedDegrees(.infinity) == 0)
     }
 
     @Test

@@ -577,6 +577,12 @@ private struct ShaderControlsView: View {
                 scale: .logarithmic
             )
 
+            AngleControl(
+                title: "Angle",
+                angleDegrees: $settings.angleDegrees,
+                defaultAngleDegrees: ShaderSettings.defaults.angleDegrees
+            )
+
             Text("Add shader-specific fields to ShaderSettings and compose their controls here.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
