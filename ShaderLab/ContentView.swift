@@ -291,8 +291,11 @@ private struct PreviewPane: View {
 
             ZStack {
                 PreviewBackground(settings: displayedSettings(in: geometry.size))
-                ShaderPreviewView(settings: shaderSettings)
-                    .frame(width: subjectWidth, height: subjectHeight)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .overlay {
+                        ShaderPreviewView(settings: shaderSettings)
+                            .frame(width: subjectWidth, height: subjectHeight)
+                    }
 
                 if isBackgroundInteractionEnabled {
                     TrackpadPanSurface(
