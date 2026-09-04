@@ -168,6 +168,7 @@ struct ShaderLabTests {
 
         #expect(insertion.curve.points.count == curve.points.count + 1)
         #expect(insertion.curve.points.contains(where: { $0.id == insertedID }))
+        #expect(insertion.curve.points.first(where: { $0.id == insertedID })?.handlesLinked == true)
         for sample in 0 ... 100 {
             let x = Double(sample) / 100
             let before = try #require(curve.value(at: x))

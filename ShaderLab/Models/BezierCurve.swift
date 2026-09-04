@@ -316,7 +316,8 @@ enum BezierCurveRules {
         let newPoint = BezierAnchor(
             position: position,
             incomingHandle: incoming,
-            outgoingHandle: outgoing
+            outgoingHandle: outgoing,
+            handlesLinked: true
         )
 
         points[segmentIndex].outgoingHandle = first

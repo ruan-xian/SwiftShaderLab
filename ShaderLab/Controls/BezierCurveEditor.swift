@@ -209,6 +209,13 @@ struct BezierCurveEditor: View {
                 )
 
                 ForEach(curve.points) { point in
+                    if point.id != selectedID {
+                        inactiveHandleNode(point.incomingHandle, in: geometry.size)
+                        inactiveHandleNode(point.outgoingHandle, in: geometry.size)
+                    }
+                }
+
+                ForEach(curve.points) { point in
                     anchorNode(point, in: geometry.size)
                 }
 
@@ -244,16 +251,17 @@ struct BezierCurveEditor: View {
         Canvas { context, _ in
             drawGrid(context: &context, size: size)
 
-            if let selectedPoint {
+            for point in curve.points {
                 var handles = Path()
-                handles.move(to: screenPoint(selectedPoint.position, in: size))
-                handles.addLine(to: screenPoint(selectedPoint.incomingHandle, in: size))
-                handles.move(to: screenPoint(selectedPoint.position, in: size))
-                handles.addLine(to: screenPoint(selectedPoint.outgoingHandle, in: size))
+                handles.move(to: screenPoint(point.position, in: size))
+                handles.addLine(to: screenPoint(point.incomingHandle, in: size))
+                handles.move(to: screenPoint(point.position, in: size))
+                handles.addLine(to: screenPoint(point.outgoingHandle, in: size))
+                let isSelected = point.id == selectedID
                 context.stroke(
                     handles,
-                    with: .color(tint.opacity(0.55)),
-                    style: StrokeStyle(lineWidth: 1, dash: [4, 3])
+                    with: .color(tint.opacity(isSelected ? 0.55 : 0.08)),
+                    style: StrokeStyle(lineWidth: isSelected ? 1 : 0.75, dash: [4, 3])
                 )
             }
 
@@ -375,6 +383,15 @@ struct BezierCurveEditor: View {
             .accessibilityElement()
             .accessibilityLabel(kind == .incomingHandle ? "Incoming handle" : "Outgoing handle")
             .accessibilityValue(coordinateDescription(coordinate))
+    }
+
+    private func inactiveHandleNode(_ coordinate: BezierCoordinate, in size: CGSize) -> some View {
+        RoundedRectangle(cornerRadius: 2)
+            .fill(tint.opacity(0.14))
+            .frame(width: 9, height: 9)
+            .position(screenPoint(coordinate, in: size))
+            .allowsHitTesting(false)
+            .accessibilityHidden(true)
     }
 
     private func coordinateEditor(for pointID: UUID) -> some View {
