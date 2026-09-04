@@ -3,9 +3,9 @@ import UIKit
 import UniformTypeIdentifiers
 
 private enum ControlTab: String, CaseIterable, Identifiable {
-    case shader = "Shader"
-    case gradient = "Gradient"
-    case bezier = "Bézier"
+    case color = "Color"
+    case lighting = "Lighting"
+    case profile = "Profile"
 
     var id: Self { self }
 }
@@ -13,7 +13,7 @@ private enum ControlTab: String, CaseIterable, Identifiable {
 struct ContentView: View {
     @Bindable var store: ShaderLabStore
 
-    @State private var selectedTab = ControlTab.shader
+    @State private var selectedTab = ControlTab.color
     @State private var isImporting = false
     @State private var isExporting = false
     @State private var exportDocument = JSONFileDocument(data: Data())
@@ -223,17 +223,14 @@ struct ContentView: View {
     @ViewBuilder
     private var controlPanel: some View {
         switch selectedTab {
-        case .shader:
-            ShaderControlsView(settings: $store.document.shader)
+        case .color:
+            ColorControlsView(settings: $store.document.shader)
 
-        case .gradient:
-            GradientEditor(
-                stops: $store.document.shader.gradientStops,
-                defaultStops: ShaderSettings.defaults.gradientStops
-            )
+        case .lighting:
+            LightingControlsView(settings: $store.document.shader)
 
-        case .bezier:
-            BezierExamplesView(examples: $store.document.shader.bezierCurves)
+        case .profile:
+            ProfileControlsView(settings: $store.document.shader)
         }
     }
 
@@ -549,41 +546,101 @@ private struct TrackpadPanSurface: UIViewRepresentable {
     }
 }
 
-private struct ShaderControlsView: View {
+private struct ColorControlsView: View {
     @Binding var settings: ShaderSettings
 
     var body: some View {
         VStack(spacing: 16) {
-            LabSlider(
-                title: "Intensity",
-                value: $settings.intensity,
-                defaultValue: ShaderSettings.defaults.intensity,
-                range: 0 ... 2
+            GradientEditor(
+                stops: $settings.diffuseGradientStops,
+                defaultStops: ShaderSettings.defaults.diffuseGradientStops
+            )
+
+            AngleControl(
+                title: "Gradient Direction",
+                angleDegrees: $settings.gradientDirectionDegrees,
+                defaultAngleDegrees: ShaderSettings.defaults.gradientDirectionDegrees
+            )
+        }
+    }
+}
+
+private struct LightingControlsView: View {
+    @Binding var settings: ShaderSettings
+
+    var body: some View {
+        VStack(spacing: 16) {
+            AngleControl(
+                title: "Light Direction",
+                angleDegrees: $settings.lightDirectionDegrees,
+                defaultAngleDegrees: ShaderSettings.defaults.lightDirectionDegrees
             )
 
             LabSlider(
-                title: "Scale",
-                value: $settings.scale,
-                defaultValue: ShaderSettings.defaults.scale,
+                title: "Light Distance",
+                value: $settings.lightDistance,
+                defaultValue: ShaderSettings.defaults.lightDistance,
+                range: 0 ... 4
+            )
+
+            LabSlider(
+                title: "Light Depth",
+                value: $settings.lightDepth,
+                defaultValue: ShaderSettings.defaults.lightDepth,
+                range: 0.05 ... 4,
+                scale: .logarithmic
+            )
+
+            LabSlider(
+                title: "Light Brightness",
+                value: $settings.lightBrightness,
+                defaultValue: ShaderSettings.defaults.lightBrightness,
                 range: 0.01 ... 100,
                 scale: .logarithmic
             )
 
+            ColorField(
+                title: "Light Color",
+                color: $settings.lightColor,
+                defaultColor: ShaderSettings.defaults.lightColor
+            )
+
+            Divider()
+
             LabSlider(
-                title: "Speed",
-                value: $settings.speed,
-                defaultValue: ShaderSettings.defaults.speed,
-                range: 0 ... 8,
-                scale: .logarithmic
+                title: "Ambient Strength",
+                value: $settings.ambientStrength,
+                defaultValue: ShaderSettings.defaults.ambientStrength,
+                range: 0 ... 1
             )
 
-            AngleControl(
-                title: "Angle",
-                angleDegrees: $settings.angleDegrees,
-                defaultAngleDegrees: ShaderSettings.defaults.angleDegrees
+            ColorField(
+                title: "Ambient Color",
+                color: $settings.ambientColor,
+                defaultColor: ShaderSettings.defaults.ambientColor
+            )
+        }
+    }
+}
+
+private struct ProfileControlsView: View {
+    @Binding var settings: ShaderSettings
+
+    var body: some View {
+        VStack(spacing: 12) {
+            BezierCurveEditor(
+                title: "Radial Height",
+                curve: $settings.profileCurve,
+                defaultCurve: ShaderSettings.defaults.profileCurve,
+                configuration: BezierCurveEditorConfiguration(
+                    domainX: 0 ... 1,
+                    domainY: 0 ... 1,
+                    anchorXBounds: 0 ... 1
+                ),
+                tint: .cyan
             )
 
-            Text("Add shader-specific fields to ShaderSettings and compose their controls here.")
+            Text("Radius runs from 0 at the center to 1 at the outside edge. A height of 1 equals the circle radius.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .frame(maxWidth: .infinity, alignment: .leading)

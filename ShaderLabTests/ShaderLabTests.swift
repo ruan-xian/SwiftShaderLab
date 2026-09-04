@@ -10,11 +10,11 @@ struct ShaderLabTests {
         let object = try #require(JSONSerialization.jsonObject(with: data) as? [String: Any])
 
         #expect(decoded == .defaults)
-        #expect(object["schemaVersion"] as? Int == 1)
+        #expect(object["schemaVersion"] as? Int == 2)
         #expect(object["shader"] is [String: Any])
         #expect(object["preview"] is [String: Any])
         #expect((object["shader"] as? [String: Any])?["backgroundMode"] == nil)
-        #expect((object["preview"] as? [String: Any])?["intensity"] == nil)
+        #expect((object["preview"] as? [String: Any])?["lightBrightness"] == nil)
     }
 
     @Test
@@ -102,18 +102,15 @@ struct ShaderLabTests {
     }
 
     @Test
-    func olderDocumentsDecodeWithDefaultBezierCurves() throws {
-        let data = try ShaderLabDocument.defaults.jsonData()
-        var object = try #require(JSONSerialization.jsonObject(with: data) as? [String: Any])
-        var shader = try #require(object["shader"] as? [String: Any])
-        shader.removeValue(forKey: "bezierCurves")
-        shader.removeValue(forKey: "angleDegrees")
-        object["shader"] = shader
+    func versionOneDocumentsLoadCompleteDefaults() throws {
+        var document = ShaderLabDocument.defaults
+        document.schemaVersion = 1
+        document.shader.lightBrightness = 42
+        document.preview.subjectScale = 1.8
 
-        let decoded = try ShaderLabDocument.decodeJSON(JSONSerialization.data(withJSONObject: object))
+        let decoded = try ShaderLabDocument.decodeJSON(document.jsonData())
 
-        #expect(decoded.shader.bezierCurves == .defaults)
-        #expect(decoded.shader.angleDegrees == 0)
+        #expect(decoded == .defaults)
     }
 
     @Test
@@ -162,7 +159,7 @@ struct ShaderLabTests {
             curve,
             anchorXBounds: 0 ... 1,
             anchorYBounds: 0 ... 1,
-            fallback: BezierCurveExamples.defaults.easing
+            fallback: .sphericalProfile
         )
 
         #expect(result.points[0].position == BezierCoordinate(x: 0, y: 0))
@@ -174,7 +171,7 @@ struct ShaderLabTests {
 
     @Test
     func bezierInsertionPreservesCurveShape() throws {
-        let curve = BezierCurveExamples.defaults.transfer
+        let curve = multiPointBezierCurve()
         let insertion = BezierCurveRules.insertingPoint(into: curve)
         let insertedID = try #require(insertion.id)
 
@@ -191,14 +188,14 @@ struct ShaderLabTests {
 
     @Test
     func linkedBezierHandlesAreMirroredAroundTheirAnchor() {
-        var curve = BezierCurveExamples.defaults.transfer
+        var curve = multiPointBezierCurve()
         curve.points[1].handlesLinked = true
         curve.points[1].outgoingHandle = BezierCoordinate(x: 0.44, y: 0.9)
 
         let result = BezierCurveRules.sanitized(
             curve,
             anchorXBounds: 0 ... 1,
-            fallback: BezierCurveExamples.defaults.transfer
+            fallback: multiPointBezierCurve()
         )
         let point = result.points[1]
         let expectedIncoming = BezierCurveRules.mirrored(
@@ -267,7 +264,7 @@ struct ShaderLabTests {
     @Test @MainActor
     func malformedImportDoesNotReplaceCurrentDocument() {
         var document = ShaderLabDocument.defaults
-        document.shader.intensity = 1.37
+        document.shader.lightBrightness = 1.37
         let store = ShaderLabStore(document: document, persistsChanges: false)
 
         do {
@@ -305,6 +302,26 @@ struct ShaderLabTests {
                 position: BezierCoordinate(x: 0.8, y: 0.8),
                 incomingHandle: BezierCoordinate(x: 0.6, y: 0.6),
                 outgoingHandle: BezierCoordinate(x: 1, y: 1)
+            ),
+        ])
+    }
+
+    private func multiPointBezierCurve() -> BezierCurve {
+        BezierCurve(points: [
+            BezierAnchor(
+                position: BezierCoordinate(x: 0, y: 0.1),
+                incomingHandle: BezierCoordinate(x: -0.15, y: 0.1),
+                outgoingHandle: BezierCoordinate(x: 0.12, y: 0.1)
+            ),
+            BezierAnchor(
+                position: BezierCoordinate(x: 0.32, y: 0.28),
+                incomingHandle: BezierCoordinate(x: 0.22, y: 0.16),
+                outgoingHandle: BezierCoordinate(x: 0.44, y: 1.2)
+            ),
+            BezierAnchor(
+                position: BezierCoordinate(x: 1, y: 0.9),
+                incomingHandle: BezierCoordinate(x: 0.8, y: 0.9),
+                outgoingHandle: BezierCoordinate(x: 1.15, y: 0.9)
             ),
         ])
     }

@@ -63,6 +63,25 @@ struct BezierCurveLookupTable: Equatable, Sendable {
 struct BezierCurve: Codable, Equatable, Sendable {
     var points: [BezierAnchor]
 
+    /// A quarter-circle profile where height 1 equals the rendered circle's radius.
+    static let sphericalProfile: BezierCurve = {
+        let kappa = 0.552_284_749_8
+        return BezierCurve(points: [
+            BezierAnchor(
+                position: BezierCoordinate(x: 0, y: 1),
+                incomingHandle: BezierCoordinate(x: -kappa, y: 1),
+                outgoingHandle: BezierCoordinate(x: kappa, y: 1),
+                handlesLinked: true
+            ),
+            BezierAnchor(
+                position: BezierCoordinate(x: 1, y: 0),
+                incomingHandle: BezierCoordinate(x: 1, y: kappa),
+                outgoingHandle: BezierCoordinate(x: 1, y: -kappa),
+                handlesLinked: true
+            ),
+        ])
+    }()
+
     /// Evaluates the function value. Curve data should be sanitized before evaluation.
     func value(at input: Double) -> Double? {
         guard let first = points.first else { return nil }
@@ -253,69 +272,6 @@ struct BezierCurve: Codable, Equatable, Sendable {
     }
 }
 
-struct BezierCurveExamples: Codable, Equatable, Sendable {
-    var easing: BezierCurve
-    var transfer: BezierCurve
-    var partialDomain: BezierCurve
-
-    static let defaults = BezierCurveExamples(
-        easing: BezierCurve(points: [
-            BezierAnchor(
-                position: BezierCoordinate(x: 0, y: 0),
-                incomingHandle: BezierCoordinate(x: -0.2, y: -0.05),
-                outgoingHandle: BezierCoordinate(x: 0.2, y: 0.05),
-                handlesLinked: true
-            ),
-            BezierAnchor(
-                position: BezierCoordinate(x: 1, y: 1),
-                incomingHandle: BezierCoordinate(x: 0.72, y: 0.95),
-                outgoingHandle: BezierCoordinate(x: 1.28, y: 1.05),
-                handlesLinked: true
-            ),
-        ]),
-        transfer: BezierCurve(points: [
-            BezierAnchor(
-                position: BezierCoordinate(x: 0, y: 0.1),
-                incomingHandle: BezierCoordinate(x: -0.15, y: 0.1),
-                outgoingHandle: BezierCoordinate(x: 0.12, y: 0.1)
-            ),
-            BezierAnchor(
-                position: BezierCoordinate(x: 0.32, y: 0.28),
-                incomingHandle: BezierCoordinate(x: 0.22, y: 0.16),
-                outgoingHandle: BezierCoordinate(x: 0.44, y: 1.2)
-            ),
-            BezierAnchor(
-                position: BezierCoordinate(x: 0.68, y: 0.72),
-                incomingHandle: BezierCoordinate(x: 0.56, y: -0.15),
-                outgoingHandle: BezierCoordinate(x: 0.8, y: 0.92)
-            ),
-            BezierAnchor(
-                position: BezierCoordinate(x: 1, y: 0.9),
-                incomingHandle: BezierCoordinate(x: 0.9, y: 0.9),
-                outgoingHandle: BezierCoordinate(x: 1.15, y: 0.9)
-            ),
-        ]),
-        partialDomain: BezierCurve(points: [
-            BezierAnchor(
-                position: BezierCoordinate(x: 0.2, y: 0.18),
-                incomingHandle: BezierCoordinate(x: -0.05, y: -0.1),
-                outgoingHandle: BezierCoordinate(x: 0.3, y: 0.3)
-            ),
-            BezierAnchor(
-                position: BezierCoordinate(x: 0.52, y: 0.78),
-                incomingHandle: BezierCoordinate(x: 0.42, y: 0.7),
-                outgoingHandle: BezierCoordinate(x: 0.62, y: 0.86),
-                handlesLinked: true
-            ),
-            BezierAnchor(
-                position: BezierCoordinate(x: 0.8, y: 0.45),
-                incomingHandle: BezierCoordinate(x: 0.7, y: 0.6),
-                outgoingHandle: BezierCoordinate(x: 1.05, y: 0.2)
-            ),
-        ])
-    )
-}
-
 enum BezierCurveRules {
     static let minimumPointCount = 2
 
@@ -331,7 +287,7 @@ enum BezierCurveRules {
                 fallback,
                 anchorXBounds: anchorXBounds,
                 anchorYBounds: anchorYBounds,
-                fallback: BezierCurveExamples.defaults.easing
+                fallback: .sphericalProfile
             )
         }
 

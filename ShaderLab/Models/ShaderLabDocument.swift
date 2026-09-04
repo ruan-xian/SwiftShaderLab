@@ -3,7 +3,7 @@ import SwiftUI
 import UIKit
 
 struct ShaderLabDocument: Codable, Equatable {
-    static let currentSchemaVersion = 1
+    static let currentSchemaVersion = 2
 
     var schemaVersion: Int
     var shader: ShaderSettings
@@ -15,33 +15,61 @@ struct ShaderLabDocument: Codable, Equatable {
         preview: .defaults
     )
 
+    private enum CodingKeys: String, CodingKey {
+        case schemaVersion
+        case shader
+        case preview
+    }
+
+    init(schemaVersion: Int, shader: ShaderSettings, preview: PreviewSettings) {
+        self.schemaVersion = schemaVersion
+        self.shader = shader
+        self.preview = preview
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        let schemaVersion = try container.decode(Int.self, forKey: .schemaVersion)
+
+        if schemaVersion == 1 {
+            self = Self.defaults
+            return
+        }
+
+        guard schemaVersion == Self.currentSchemaVersion else {
+            throw ShaderLabDocumentError.unsupportedSchemaVersion(schemaVersion)
+        }
+
+        self.init(
+            schemaVersion: schemaVersion,
+            shader: try container.decode(ShaderSettings.self, forKey: .shader),
+            preview: try container.decode(PreviewSettings.self, forKey: .preview)
+        )
+    }
+
     func validated() throws -> ShaderLabDocument {
         guard schemaVersion == Self.currentSchemaVersion else {
             throw ShaderLabDocumentError.unsupportedSchemaVersion(schemaVersion)
         }
 
         var result = self
-        result.shader.intensity = result.shader.intensity.clamped(to: 0 ... 2)
-        result.shader.scale = result.shader.scale.clamped(to: 0.01 ... 100)
-        result.shader.speed = result.shader.speed.clamped(to: 0 ... 8)
-        result.shader.angleDegrees = AngleRules.normalizedDegrees(result.shader.angleDegrees)
-        result.shader.gradientStops = GradientRules.sanitized(result.shader.gradientStops)
-        result.shader.bezierCurves.easing = BezierCurveRules.sanitized(
-            result.shader.bezierCurves.easing,
-            anchorXBounds: 0 ... 1,
-            anchorYBounds: 0 ... 1,
-            fallback: BezierCurveExamples.defaults.easing
+        result.shader.gradientDirectionDegrees = AngleRules.normalizedDegrees(
+            result.shader.gradientDirectionDegrees
         )
-        result.shader.bezierCurves.transfer = BezierCurveRules.sanitized(
-            result.shader.bezierCurves.transfer,
-            anchorXBounds: 0 ... 1,
-            fallback: BezierCurveExamples.defaults.transfer
+        result.shader.lightDirectionDegrees = AngleRules.normalizedDegrees(
+            result.shader.lightDirectionDegrees
         )
-        result.shader.bezierCurves.partialDomain = BezierCurveRules.sanitized(
-            result.shader.bezierCurves.partialDomain,
-            anchorXBounds: 0.15 ... 0.85,
-            anchorYBounds: 0 ... 1,
-            fallback: BezierCurveExamples.defaults.partialDomain
+        result.shader.diffuseGradientStops = GradientRules.sanitized(
+            result.shader.diffuseGradientStops
+        )
+        result.shader.lightDistance = result.shader.lightDistance.clamped(to: 0 ... 4)
+        result.shader.lightDepth = result.shader.lightDepth.clamped(to: 0.05 ... 4)
+        result.shader.lightBrightness = result.shader.lightBrightness.clamped(to: 0.01 ... 100)
+        result.shader.ambientStrength = result.shader.ambientStrength.clamped(to: 0 ... 1)
+        result.shader.profileCurve = BezierCurveRules.sanitized(
+            result.shader.profileCurve,
+            anchorXBounds: 0 ... 1,
+            fallback: ShaderSettings.defaults.profileCurve
         )
         result.preview.subjectScale = result.preview.subjectScale.clamped(to: 0.1 ... 2)
         result.preview.checkerScale = result.preview.checkerScale.clamped(to: 12 ... 600)
@@ -74,19 +102,19 @@ enum ShaderLabDocumentError: LocalizedError, Equatable {
 }
 
 struct ShaderSettings: Codable, Equatable {
-    var intensity: Double
-    var scale: Double
-    var speed: Double
-    var angleDegrees: Double
-    var gradientStops: [ShaderGradientStop]
-    var bezierCurves: BezierCurveExamples
+    var diffuseGradientStops: [ShaderGradientStop]
+    var gradientDirectionDegrees: Double
+    var lightDirectionDegrees: Double
+    var lightDistance: Double
+    var lightDepth: Double
+    var lightBrightness: Double
+    var lightColor: SRGBAColor
+    var ambientStrength: Double
+    var ambientColor: SRGBAColor
+    var profileCurve: BezierCurve
 
     static let defaults = ShaderSettings(
-        intensity: 0.85,
-        scale: 1,
-        speed: 0.5,
-        angleDegrees: 0,
-        gradientStops: [
+        diffuseGradientStops: [
             ShaderGradientStop(
                 location: 0,
                 color: SRGBAColor(red: 0.13, green: 0.86, blue: 0.95)
@@ -100,32 +128,16 @@ struct ShaderSettings: Codable, Equatable {
                 color: SRGBAColor(red: 0.91, green: 0.29, blue: 0.72)
             ),
         ],
-        bezierCurves: .defaults
+        gradientDirectionDegrees: 0,
+        lightDirectionDegrees: 135,
+        lightDistance: 1,
+        lightDepth: 1,
+        lightBrightness: 1,
+        lightColor: SRGBAColor(red: 1, green: 1, blue: 1),
+        ambientStrength: 0.1,
+        ambientColor: SRGBAColor(red: 1, green: 1, blue: 1),
+        profileCurve: .sphericalProfile
     )
-
-    private enum CodingKeys: String, CodingKey {
-        case intensity
-        case scale
-        case speed
-        case angleDegrees
-        case gradientStops
-        case bezierCurves
-    }
-}
-
-extension ShaderSettings {
-    init(from decoder: Decoder) throws {
-        let container = try decoder.container(keyedBy: CodingKeys.self)
-        intensity = try container.decode(Double.self, forKey: .intensity)
-        scale = try container.decode(Double.self, forKey: .scale)
-        speed = try container.decode(Double.self, forKey: .speed)
-        angleDegrees = try container.decodeIfPresent(Double.self, forKey: .angleDegrees) ?? 0
-        gradientStops = try container.decode([ShaderGradientStop].self, forKey: .gradientStops)
-        bezierCurves = try container.decodeIfPresent(
-            BezierCurveExamples.self,
-            forKey: .bezierCurves
-        ) ?? .defaults
-    }
 }
 
 struct PreviewSettings: Codable, Equatable {
@@ -391,7 +403,7 @@ enum GradientRules {
             .sorted { $0.location < $1.location }
 
         if result.isEmpty {
-            result = ShaderSettings.defaults.gradientStops
+            result = ShaderSettings.defaults.diffuseGradientStops
         } else if result.count == 1 {
             let color = result[0].color
             result = [

@@ -23,63 +23,6 @@ struct BezierCurveEditorConfiguration {
     }
 }
 
-enum BezierExamplePalette {
-    static let easing = Color.cyan
-    static let transfer = Color.orange
-    static let partialDomain = Color.pink
-}
-
-struct BezierExamplesView: View {
-    @Binding var examples: BezierCurveExamples
-
-    var body: some View {
-        VStack(spacing: 16) {
-            BezierCurveEditor(
-                title: "Easing",
-                curve: $examples.easing,
-                defaultCurve: BezierCurveExamples.defaults.easing,
-                configuration: BezierCurveEditorConfiguration(
-                    domainX: 0 ... 1,
-                    domainY: 0 ... 1,
-                    anchorXBounds: 0 ... 1,
-                    anchorYBounds: 0 ... 1
-                ),
-                tint: BezierExamplePalette.easing
-            )
-
-            BezierCurveEditor(
-                title: "Transfer",
-                curve: $examples.transfer,
-                defaultCurve: BezierCurveExamples.defaults.transfer,
-                configuration: BezierCurveEditorConfiguration(
-                    domainX: 0 ... 1,
-                    domainY: 0 ... 1,
-                    anchorXBounds: 0 ... 1
-                ),
-                tint: BezierExamplePalette.transfer
-            )
-
-            BezierCurveEditor(
-                title: "Partial Domain",
-                curve: $examples.partialDomain,
-                defaultCurve: BezierCurveExamples.defaults.partialDomain,
-                configuration: BezierCurveEditorConfiguration(
-                    domainX: 0 ... 1,
-                    domainY: 0 ... 1,
-                    anchorXBounds: 0.15 ... 0.85,
-                    anchorYBounds: 0 ... 1
-                ),
-                tint: BezierExamplePalette.partialDomain
-            )
-
-            Text("Each editor produces a Float lookup table for shader or MTKView upload.")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .frame(maxWidth: .infinity, alignment: .leading)
-        }
-    }
-}
-
 struct BezierCurveEditor: View {
     private enum EditableCoordinate: Equatable {
         case position

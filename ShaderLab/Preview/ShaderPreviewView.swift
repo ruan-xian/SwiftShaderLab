@@ -1,111 +1,60 @@
 import SwiftUI
 
-/// Replace this view with the shader or renderer under development.
-/// Keep the `ShaderSettings` input so the surrounding lab remains reusable.
-/// Remove the template's existing settings and inspector tabs, then replace them
-/// with controls for your shader, reusing the predefined controls where possible.
 struct ShaderPreviewView: View {
+    private static let profileSampleCount = 256
+
     let settings: ShaderSettings
 
     var body: some View {
-        TimelineView(.animation) { context in
-            GeometryReader { geometry in
-                let side = min(geometry.size.width, geometry.size.height) * 0.58
-                let phase = context.date.timeIntervalSinceReferenceDate * settings.speed
+        GeometryReader { geometry in
+            let side = min(geometry.size.width, geometry.size.height) * 0.58
 
-                ZStack {
-                    Circle()
-                        .fill(
-                            LinearGradient(
-                                stops: settings.gradientStops.map {
-                                    Gradient.Stop(
-                                        color: $0.color.color,
-                                        location: CGFloat($0.location)
-                                    )
-                                },
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        )
-
-                    Ellipse()
-                        .fill(.white.opacity(0.46 * settings.intensity))
-                        .frame(width: side * 0.52, height: side * 0.18)
-                        .blur(radius: side * 0.05)
-                        .offset(x: -side * 0.10, y: -side * 0.21)
-                        .rotationEffect(.radians(phase * 0.25))
-
-                    Circle()
-                        .stroke(.white.opacity(0.42), lineWidth: max(side * 0.012, 1))
-                        .blur(radius: side * 0.006)
-
-                    BezierCurveGraphOverlay(examples: settings.bezierCurves)
-                        .padding(side * 0.08)
-                        .clipShape(Circle())
-                }
+            Circle()
+                .fill(.white)
                 .frame(width: side, height: side)
-                .scaleEffect(settings.scale.clamped(to: 0.2 ... 1.6))
-                // SwiftUI uses screen coordinates, so negate the mathematical CCW angle.
-                .rotationEffect(.degrees(-settings.angleDegrees))
-                .rotationEffect(.radians(sin(phase) * 0.08))
+                .colorEffect(shader(size: side))
                 .shadow(color: .black.opacity(0.28), radius: side * 0.08, y: side * 0.04)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .accessibilityLabel("Shader preview placeholder")
-            }
+                .accessibilityLabel("Lambert-shaded radial profile preview")
         }
     }
-}
 
-private struct BezierCurveGraphOverlay: View {
-    let examples: BezierCurveExamples
+    private func shader(size: CGFloat) -> Shader {
+        let stops = GradientRules.sanitized(settings.diffuseGradientStops)
+        let heightTable = settings.profileCurve.lookupTable(
+            in: 0 ... 1,
+            sampleCount: Self.profileSampleCount
+        )
+        let derivativeTable = settings.profileCurve.derivativeLookupTable(
+            in: 0 ... 1,
+            sampleCount: Self.profileSampleCount
+        )
 
-    var body: some View {
-        Canvas { context, size in
-            draw(
-                examples.easing,
-                color: BezierExamplePalette.easing,
-                context: &context,
-                size: size
-            )
-            draw(
-                examples.transfer,
-                color: BezierExamplePalette.transfer,
-                context: &context,
-                size: size
-            )
-            draw(
-                examples.partialDomain,
-                color: BezierExamplePalette.partialDomain,
-                context: &context,
-                size: size
-            )
-        }
-        .accessibilityHidden(true)
+        return ShaderLibrary.lambertRadialProfile(
+            .float2(size, size),
+            .float(radians(settings.gradientDirectionDegrees)),
+            .floatArray(stops.map { Float($0.location) }),
+            .colorArray(stops.map(\.color.color)),
+            .float(radians(settings.lightDirectionDegrees)),
+            .float(settings.lightDistance),
+            .float(settings.lightDepth),
+            .float(settings.lightBrightness),
+            .color(settings.lightColor.color),
+            .float(settings.ambientStrength),
+            .color(settings.ambientColor.color),
+            .floatArray(finiteSamples(heightTable.samples)),
+            .floatArray(finiteSamples(derivativeTable.samples))
+        )
     }
 
-    private func draw(
-        _ curve: BezierCurve,
-        color: Color,
-        context: inout GraphicsContext,
-        size: CGSize
-    ) {
-        let table = curve.lookupTable(in: 0 ... 1, sampleCount: 256)
-        guard table.samples.count > 1 else { return }
+    private func radians(_ degrees: Double) -> Float {
+        Float(AngleRules.normalizedDegrees(degrees) * .pi / 180)
+    }
 
-        var path = Path()
-        for index in table.samples.indices {
-            let progress = CGFloat(index) / CGFloat(table.samples.count - 1)
-            let point = CGPoint(
-                x: progress * size.width,
-                y: size.height - CGFloat(table.samples[index]) * size.height
-            )
-            if index == table.samples.startIndex {
-                path.move(to: point)
-            } else {
-                path.addLine(to: point)
-            }
+    private func finiteSamples(_ samples: [Float]) -> [Float] {
+        samples.map { sample in
+            guard sample.isFinite else { return 0 }
+            return min(max(sample, -10_000), 10_000)
         }
-        context.stroke(path, with: .color(.black.opacity(0.45)), lineWidth: 5)
-        context.stroke(path, with: .color(color), lineWidth: 2.5)
     }
 }
