@@ -38,6 +38,10 @@ struct ShaderPreviewView: View {
                     Circle()
                         .stroke(.white.opacity(0.42), lineWidth: max(side * 0.012, 1))
                         .blur(radius: side * 0.006)
+
+                    BezierCurveGraphOverlay(examples: settings.bezierCurves)
+                        .padding(side * 0.08)
+                        .clipShape(Circle())
                 }
                 .frame(width: side, height: side)
                 .scaleEffect(settings.scale.clamped(to: 0.2 ... 1.6))
@@ -47,5 +51,59 @@ struct ShaderPreviewView: View {
                 .accessibilityLabel("Shader preview placeholder")
             }
         }
+    }
+}
+
+private struct BezierCurveGraphOverlay: View {
+    let examples: BezierCurveExamples
+
+    var body: some View {
+        Canvas { context, size in
+            draw(
+                examples.easing,
+                color: BezierExamplePalette.easing,
+                context: &context,
+                size: size
+            )
+            draw(
+                examples.transfer,
+                color: BezierExamplePalette.transfer,
+                context: &context,
+                size: size
+            )
+            draw(
+                examples.partialDomain,
+                color: BezierExamplePalette.partialDomain,
+                context: &context,
+                size: size
+            )
+        }
+        .accessibilityHidden(true)
+    }
+
+    private func draw(
+        _ curve: BezierCurve,
+        color: Color,
+        context: inout GraphicsContext,
+        size: CGSize
+    ) {
+        let table = curve.lookupTable(in: 0 ... 1, sampleCount: 256)
+        guard table.samples.count > 1 else { return }
+
+        var path = Path()
+        for index in table.samples.indices {
+            let progress = CGFloat(index) / CGFloat(table.samples.count - 1)
+            let point = CGPoint(
+                x: progress * size.width,
+                y: size.height - CGFloat(table.samples[index]) * size.height
+            )
+            if index == table.samples.startIndex {
+                path.move(to: point)
+            } else {
+                path.addLine(to: point)
+            }
+        }
+        context.stroke(path, with: .color(.black.opacity(0.45)), lineWidth: 5)
+        context.stroke(path, with: .color(color), lineWidth: 2.5)
     }
 }

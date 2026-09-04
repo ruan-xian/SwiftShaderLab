@@ -25,6 +25,23 @@ struct ShaderLabDocument: Codable, Equatable {
         result.shader.scale = result.shader.scale.clamped(to: 0.01 ... 100)
         result.shader.speed = result.shader.speed.clamped(to: 0 ... 8)
         result.shader.gradientStops = GradientRules.sanitized(result.shader.gradientStops)
+        result.shader.bezierCurves.easing = BezierCurveRules.sanitized(
+            result.shader.bezierCurves.easing,
+            anchorXBounds: 0 ... 1,
+            anchorYBounds: 0 ... 1,
+            fallback: BezierCurveExamples.defaults.easing
+        )
+        result.shader.bezierCurves.transfer = BezierCurveRules.sanitized(
+            result.shader.bezierCurves.transfer,
+            anchorXBounds: 0 ... 1,
+            fallback: BezierCurveExamples.defaults.transfer
+        )
+        result.shader.bezierCurves.partialDomain = BezierCurveRules.sanitized(
+            result.shader.bezierCurves.partialDomain,
+            anchorXBounds: 0.15 ... 0.85,
+            anchorYBounds: 0 ... 1,
+            fallback: BezierCurveExamples.defaults.partialDomain
+        )
         result.preview.subjectScale = result.preview.subjectScale.clamped(to: 0.1 ... 2)
         result.preview.checkerScale = result.preview.checkerScale.clamped(to: 12 ... 600)
         result.preview.imageScale = result.preview.imageScale.clamped(to: 0.25 ... 4)
@@ -60,6 +77,7 @@ struct ShaderSettings: Codable, Equatable {
     var scale: Double
     var speed: Double
     var gradientStops: [ShaderGradientStop]
+    var bezierCurves: BezierCurveExamples
 
     static let defaults = ShaderSettings(
         intensity: 0.85,
@@ -78,8 +96,31 @@ struct ShaderSettings: Codable, Equatable {
                 location: 1,
                 color: SRGBAColor(red: 0.91, green: 0.29, blue: 0.72)
             ),
-        ]
+        ],
+        bezierCurves: .defaults
     )
+
+    private enum CodingKeys: String, CodingKey {
+        case intensity
+        case scale
+        case speed
+        case gradientStops
+        case bezierCurves
+    }
+}
+
+extension ShaderSettings {
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        intensity = try container.decode(Double.self, forKey: .intensity)
+        scale = try container.decode(Double.self, forKey: .scale)
+        speed = try container.decode(Double.self, forKey: .speed)
+        gradientStops = try container.decode([ShaderGradientStop].self, forKey: .gradientStops)
+        bezierCurves = try container.decodeIfPresent(
+            BezierCurveExamples.self,
+            forKey: .bezierCurves
+        ) ?? .defaults
+    }
 }
 
 struct PreviewSettings: Codable, Equatable {

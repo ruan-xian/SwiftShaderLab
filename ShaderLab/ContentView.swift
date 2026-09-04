@@ -5,6 +5,7 @@ import UniformTypeIdentifiers
 private enum ControlTab: String, CaseIterable, Identifiable {
     case shader = "Shader"
     case gradient = "Gradient"
+    case bezier = "Bézier"
 
     var id: Self { self }
 }
@@ -230,6 +231,9 @@ struct ContentView: View {
                 stops: $store.document.shader.gradientStops,
                 defaultStops: ShaderSettings.defaults.gradientStops
             )
+
+        case .bezier:
+            BezierExamplesView(examples: $store.document.shader.bezierCurves)
         }
     }
 
