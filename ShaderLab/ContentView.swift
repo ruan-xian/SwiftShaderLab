@@ -285,11 +285,14 @@ private struct PreviewPane: View {
 
     var body: some View {
         GeometryReader { geometry in
+            let subjectScale = CGFloat(previewSettings.subjectScale)
+            let subjectWidth = max(geometry.size.width - 72, 0) * subjectScale
+            let subjectHeight = max(geometry.size.height - 72, 0) * subjectScale
+
             ZStack {
                 PreviewBackground(settings: displayedSettings(in: geometry.size))
                 ShaderPreviewView(settings: shaderSettings)
-                    .padding(36)
-                    .scaleEffect(CGFloat(previewSettings.subjectScale))
+                    .frame(width: subjectWidth, height: subjectHeight)
 
                 if isBackgroundInteractionEnabled {
                     TrackpadPanSurface(
