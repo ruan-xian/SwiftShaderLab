@@ -18,6 +18,26 @@ struct ShaderLabTests {
     }
 
     @Test
+    func shaderDefaultsUseTheBundledPreset() {
+        let shader = ShaderSettings.defaults
+
+        #expect(shader.diffuseGradientStops.count == 4)
+        #expect(shader.diffuseGradientStops[1].location == 0.460_652_545_592_704_97)
+        #expect(shader.gradientDirectionDegrees == 224.504_993_225_632_63)
+        #expect(shader.lightDirectionDegrees == 127.411_743_488_141_8)
+        #expect(shader.lightDistance == 2.339_202_404_022_217)
+        #expect(shader.lightDepth == 1.710_318_788_202_911_6)
+        #expect(shader.lightBrightness == 1.000_057_095_452_761_7)
+        #expect(shader.ambientStrength == 0.231_389_954_686_164_86)
+        #expect(
+            shader.profileCurve.points.map(\.id) == [
+                UUID(uuidString: "5C991F33-E86B-48FF-AF14-E6734A41306D")!,
+                UUID(uuidString: "C301CEA1-6BDD-471E-8016-38F6935CCCE6")!,
+            ]
+        )
+    }
+
+    @Test
     func backgroundPlacementsRoundTripIndependently() throws {
         var document = ShaderLabDocument.defaults
         document.preview.isDarkMode = true

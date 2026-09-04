@@ -68,12 +68,14 @@ struct BezierCurve: Codable, Equatable, Sendable {
         let kappa = 0.552_284_749_8
         return BezierCurve(points: [
             BezierAnchor(
+                id: UUID(uuidString: "5C991F33-E86B-48FF-AF14-E6734A41306D")!,
                 position: BezierCoordinate(x: 0, y: 1),
                 incomingHandle: BezierCoordinate(x: -kappa, y: 1),
                 outgoingHandle: BezierCoordinate(x: kappa, y: 1),
                 handlesLinked: true
             ),
             BezierAnchor(
+                id: UUID(uuidString: "C301CEA1-6BDD-471E-8016-38F6935CCCE6")!,
                 position: BezierCoordinate(x: 1, y: 0),
                 incomingHandle: BezierCoordinate(x: 1, y: kappa),
                 outgoingHandle: BezierCoordinate(x: 1, y: -kappa),

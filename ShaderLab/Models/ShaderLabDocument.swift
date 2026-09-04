@@ -116,25 +116,49 @@ struct ShaderSettings: Codable, Equatable {
     static let defaults = ShaderSettings(
         diffuseGradientStops: [
             ShaderGradientStop(
+                id: UUID(uuidString: "11BD0452-76DD-4A0B-B028-B43350DBC343")!,
                 location: 0,
-                color: SRGBAColor(red: 0.13, green: 0.86, blue: 0.95)
+                color: SRGBAColor(
+                    red: 0.273_385_256_528_854_37,
+                    green: 0.949_712_336_063_385,
+                    blue: 0.791_919_291_019_439_7
+                )
             ),
             ShaderGradientStop(
-                location: 0.48,
-                color: SRGBAColor(red: 0.35, green: 0.27, blue: 0.94)
+                id: UUID(uuidString: "FCD44C7C-20D9-4C2D-9726-EC1307F84560")!,
+                location: 0.460_652_545_592_704_97,
+                color: SRGBAColor(
+                    red: 0.827_219_307_422_637_9,
+                    green: 0.574_528_872_966_766_4,
+                    blue: 0.344_620_645_046_234_13
+                )
             ),
             ShaderGradientStop(
+                id: UUID(uuidString: "6313D71E-73AA-4590-BFA5-DCE8DA958395")!,
+                location: 0.835_000_604_448_742_6,
+                color: SRGBAColor(
+                    red: 0.938_915_093_479_479_1,
+                    green: 0.346_637_430_137_652_8,
+                    blue: 0.599_637_629_696_040_2
+                )
+            ),
+            ShaderGradientStop(
+                id: UUID(uuidString: "CC642E6D-E4E1-4A41-92F9-4F420FE2B5C1")!,
                 location: 1,
-                color: SRGBAColor(red: 0.91, green: 0.29, blue: 0.72)
+                color: SRGBAColor(
+                    red: 0.914_308_130_741_119_4,
+                    green: 0.183_461_338_281_631_47,
+                    blue: 0.783_367_097_377_777_1
+                )
             ),
         ],
-        gradientDirectionDegrees: 0,
-        lightDirectionDegrees: 135,
-        lightDistance: 1,
-        lightDepth: 1,
-        lightBrightness: 1,
+        gradientDirectionDegrees: 224.504_993_225_632_63,
+        lightDirectionDegrees: 127.411_743_488_141_8,
+        lightDistance: 2.339_202_404_022_217,
+        lightDepth: 1.710_318_788_202_911_6,
+        lightBrightness: 1.000_057_095_452_761_7,
         lightColor: SRGBAColor(red: 1, green: 1, blue: 1),
-        ambientStrength: 0.1,
+        ambientStrength: 0.231_389_954_686_164_86,
         ambientColor: SRGBAColor(red: 1, green: 1, blue: 1),
         profileCurve: .sphericalProfile
     )
