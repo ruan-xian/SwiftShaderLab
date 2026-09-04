@@ -379,6 +379,9 @@ struct BezierCurveEditor: View {
 
     private func coordinateEditor(for pointID: UUID) -> some View {
         VStack(spacing: 7) {
+            Toggle(isOn: handlesLinkedBinding(for: pointID)) {
+                Label("Link Handles", systemImage: "link")
+            }
             coordinateRow("Point", pointID: pointID, kind: .position)
             coordinateRow("Handle 1", pointID: pointID, kind: .incomingHandle)
             coordinateRow("Handle 2", pointID: pointID, kind: .outgoingHandle)
@@ -552,17 +555,25 @@ struct BezierCurveEditor: View {
             curve.points[index].outgoingHandle.x += deltaX
             curve.points[index].outgoingHandle.y += deltaY
         case .incomingHandle:
-            curve.points[index].incomingHandle = constrainedHandle(
-                proposed,
-                at: index,
-                kind: .incomingHandle
-            )
+            if curve.points[index].handlesLinked {
+                updateLinkedHandle(proposed, at: index, kind: .incomingHandle)
+            } else {
+                curve.points[index].incomingHandle = constrainedHandle(
+                    proposed,
+                    at: index,
+                    kind: .incomingHandle
+                )
+            }
         case .outgoingHandle:
-            curve.points[index].outgoingHandle = constrainedHandle(
-                proposed,
-                at: index,
-                kind: .outgoingHandle
-            )
+            if curve.points[index].handlesLinked {
+                updateLinkedHandle(proposed, at: index, kind: .outgoingHandle)
+            } else {
+                curve.points[index].outgoingHandle = constrainedHandle(
+                    proposed,
+                    at: index,
+                    kind: .outgoingHandle
+                )
+            }
         }
         sanitizeCurve()
     }
@@ -587,6 +598,67 @@ struct BezierCurveEditor: View {
             result.y = result.y.clamped(to: bounds)
         }
         return result
+    }
+
+    private func updateLinkedHandle(
+        _ proposed: BezierCoordinate,
+        at index: Int,
+        kind: EditableCoordinate
+    ) {
+        let position = curve.points[index].position
+        let maximumRadius = linkedHandleMaximumRadius(at: index)
+        var coordinate = proposed
+        switch kind {
+        case .incomingHandle:
+            let radius = (position.x - proposed.x).clamped(to: 0 ... maximumRadius)
+            coordinate.x = position.x - radius
+            curve.points[index].incomingHandle = coordinate
+            curve.points[index].outgoingHandle = BezierCurveRules.mirrored(
+                coordinate,
+                around: position
+            )
+        case .outgoingHandle:
+            let radius = (proposed.x - position.x).clamped(to: 0 ... maximumRadius)
+            coordinate.x = position.x + radius
+            curve.points[index].outgoingHandle = coordinate
+            curve.points[index].incomingHandle = BezierCurveRules.mirrored(
+                coordinate,
+                around: position
+            )
+        case .position:
+            break
+        }
+    }
+
+    private func linkedHandleMaximumRadius(at index: Int) -> Double {
+        let position = curve.points[index].position
+        let leftLimit = index > curve.points.startIndex
+            ? position.x - curve.points[index - 1].outgoingHandle.x
+            : Double.greatestFiniteMagnitude
+        let rightLimit = index < curve.points.index(before: curve.points.endIndex)
+            ? curve.points[index + 1].incomingHandle.x - position.x
+            : Double.greatestFiniteMagnitude
+        return max(min(leftLimit, rightLimit), 0)
+    }
+
+    private func handlesLinkedBinding(for pointID: UUID) -> Binding<Bool> {
+        Binding(
+            get: {
+                curve.points.first(where: { $0.id == pointID })?.handlesLinked ?? false
+            },
+            set: { isLinked in
+                guard let index = curve.points.firstIndex(where: { $0.id == pointID }) else { return }
+                curve.points[index].handlesLinked = isLinked
+                if isLinked {
+                    updateLinkedHandle(
+                        curve.points[index].outgoingHandle,
+                        at: index,
+                        kind: .outgoingHandle
+                    )
+                }
+                sanitizeCurve()
+            }
+        )
     }
 
     private func constrainedHandle(

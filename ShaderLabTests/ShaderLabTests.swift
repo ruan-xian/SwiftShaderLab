@@ -177,6 +177,41 @@ struct ShaderLabTests {
     }
 
     @Test
+    func linkedBezierHandlesAreMirroredAroundTheirAnchor() {
+        var curve = BezierCurveExamples.defaults.transfer
+        curve.points[1].handlesLinked = true
+        curve.points[1].outgoingHandle = BezierCoordinate(x: 0.44, y: 0.9)
+
+        let result = BezierCurveRules.sanitized(
+            curve,
+            anchorXBounds: 0 ... 1,
+            fallback: BezierCurveExamples.defaults.transfer
+        )
+        let point = result.points[1]
+        let expectedIncoming = BezierCurveRules.mirrored(
+            point.outgoingHandle,
+            around: point.position
+        )
+
+        #expect(point.incomingHandle == expectedIncoming)
+    }
+
+    @Test
+    func olderBezierAnchorsDecodeAsUnlinked() throws {
+        let anchor = linearBezierCurve().points[0]
+        let data = try JSONEncoder().encode(anchor)
+        var object = try #require(JSONSerialization.jsonObject(with: data) as? [String: Any])
+        object.removeValue(forKey: "handlesLinked")
+
+        let decoded = try JSONDecoder().decode(
+            BezierAnchor.self,
+            from: JSONSerialization.data(withJSONObject: object)
+        )
+
+        #expect(!decoded.handlesLinked)
+    }
+
+    @Test
     func bezierLookupTableIncludesDomainEndpointsAsFloats() {
         let table = linearBezierCurve().lookupTable(in: 0 ... 1, sampleCount: 5)
 

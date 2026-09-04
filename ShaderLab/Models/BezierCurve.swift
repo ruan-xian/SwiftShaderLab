@@ -21,17 +21,37 @@ struct BezierAnchor: Codable, Equatable, Identifiable, Sendable {
     var position: BezierCoordinate
     var incomingHandle: BezierCoordinate
     var outgoingHandle: BezierCoordinate
+    var handlesLinked: Bool
 
     init(
         id: UUID = UUID(),
         position: BezierCoordinate,
         incomingHandle: BezierCoordinate,
-        outgoingHandle: BezierCoordinate
+        outgoingHandle: BezierCoordinate,
+        handlesLinked: Bool = false
     ) {
         self.id = id
         self.position = position
         self.incomingHandle = incomingHandle
         self.outgoingHandle = outgoingHandle
+        self.handlesLinked = handlesLinked
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case id
+        case position
+        case incomingHandle
+        case outgoingHandle
+        case handlesLinked
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(UUID.self, forKey: .id)
+        position = try container.decode(BezierCoordinate.self, forKey: .position)
+        incomingHandle = try container.decode(BezierCoordinate.self, forKey: .incomingHandle)
+        outgoingHandle = try container.decode(BezierCoordinate.self, forKey: .outgoingHandle)
+        handlesLinked = try container.decodeIfPresent(Bool.self, forKey: .handlesLinked) ?? false
     }
 }
 
@@ -155,13 +175,15 @@ struct BezierCurveExamples: Codable, Equatable, Sendable {
         easing: BezierCurve(points: [
             BezierAnchor(
                 position: BezierCoordinate(x: 0, y: 0),
-                incomingHandle: BezierCoordinate(x: -0.2, y: 0),
-                outgoingHandle: BezierCoordinate(x: 0.2, y: 0.05)
+                incomingHandle: BezierCoordinate(x: -0.2, y: -0.05),
+                outgoingHandle: BezierCoordinate(x: 0.2, y: 0.05),
+                handlesLinked: true
             ),
             BezierAnchor(
                 position: BezierCoordinate(x: 1, y: 1),
                 incomingHandle: BezierCoordinate(x: 0.72, y: 0.95),
-                outgoingHandle: BezierCoordinate(x: 1.2, y: 1)
+                outgoingHandle: BezierCoordinate(x: 1.28, y: 1.05),
+                handlesLinked: true
             ),
         ]),
         transfer: BezierCurve(points: [
@@ -195,7 +217,8 @@ struct BezierCurveExamples: Codable, Equatable, Sendable {
             BezierAnchor(
                 position: BezierCoordinate(x: 0.52, y: 0.78),
                 incomingHandle: BezierCoordinate(x: 0.42, y: 0.7),
-                outgoingHandle: BezierCoordinate(x: 0.64, y: 0.86)
+                outgoingHandle: BezierCoordinate(x: 0.62, y: 0.86),
+                handlesLinked: true
             ),
             BezierAnchor(
                 position: BezierCoordinate(x: 0.8, y: 0.45),
@@ -252,6 +275,7 @@ enum BezierCurveRules {
 
         enforceAnchorOrder(&points, within: anchorXBounds)
         enforceHandleOrder(&points)
+        enforceLinkedHandles(&points)
         return BezierCurve(points: points)
     }
 
@@ -296,7 +320,9 @@ enum BezierCurveRules {
         )
 
         points[segmentIndex].outgoingHandle = first
+        points[segmentIndex].handlesLinked = false
         points[nextIndex].incomingHandle = third
+        points[nextIndex].handlesLinked = false
         points.insert(newPoint, at: nextIndex)
         return (BezierCurve(points: points), newPoint.id)
     }
@@ -343,6 +369,36 @@ enum BezierCurveRules {
                 to: points[index].outgoingHandle.x ... upper
             )
         }
+    }
+
+    private static func enforceLinkedHandles(_ points: inout [BezierAnchor]) {
+        for index in points.indices where points[index].handlesLinked {
+            let position = points[index].position
+            let leftLimit = index > points.startIndex
+                ? position.x - points[index - 1].outgoingHandle.x
+                : Double.greatestFiniteMagnitude
+            let rightLimit = index < points.index(before: points.endIndex)
+                ? points[index + 1].incomingHandle.x - position.x
+                : Double.greatestFiniteMagnitude
+            let maximumRadius = max(min(leftLimit, rightLimit), 0)
+            let radius = (points[index].outgoingHandle.x - position.x)
+                .clamped(to: 0 ... maximumRadius)
+            points[index].outgoingHandle.x = position.x + radius
+            points[index].incomingHandle = mirrored(
+                points[index].outgoingHandle,
+                around: position
+            )
+        }
+    }
+
+    static func mirrored(
+        _ coordinate: BezierCoordinate,
+        around position: BezierCoordinate
+    ) -> BezierCoordinate {
+        BezierCoordinate(
+            x: position.x * 2 - coordinate.x,
+            y: position.y * 2 - coordinate.y
+        )
     }
 
     private static func movePoint(_ point: inout BezierAnchor, toX x: Double) {
