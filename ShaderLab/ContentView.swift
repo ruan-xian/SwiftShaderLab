@@ -556,28 +556,13 @@ private struct PreviewControlsView: View {
             }
             .accessibilityValue(settings.isDarkMode ? "Dark" : "Light")
 
-            HStack {
+            HStack(spacing: 16) {
                 Text("Background")
                 Spacer()
-                Menu {
-                    ForEach(BackgroundMode.allCases) { option in
-                        Button {
-                            settings.backgroundMode = option
-                        } label: {
-                            if settings.backgroundMode == option {
-                                Label(option.title, systemImage: "checkmark")
-                            } else {
-                                Text(option.title)
-                            }
-                        }
-                    }
-                } label: {
-                    Label(
-                        settings.backgroundMode.title,
-                        systemImage: "chevron.up.chevron.down"
-                    )
+
+                ForEach(BackgroundMode.allCases) { option in
+                    backgroundModeButton(option)
                 }
-                .accessibilityLabel("Background")
             }
 
             switch settings.backgroundMode {
@@ -608,6 +593,24 @@ private struct PreviewControlsView: View {
             }
         }
         .font(.caption)
+    }
+
+    private func backgroundModeButton(_ option: BackgroundMode) -> some View {
+        let isSelected = settings.backgroundMode == option
+
+        return Button {
+            settings.backgroundMode = option
+        } label: {
+            Label(
+                option.title,
+                systemImage: isSelected ? "largecircle.fill.circle" : "circle"
+            )
+        }
+        .buttonStyle(.plain)
+        .foregroundStyle(isSelected ? Color.accentColor : Color.secondary)
+        .accessibilityLabel(option.title)
+        .accessibilityValue(isSelected ? "Selected" : "Not selected")
+        .accessibilityAddTraits(isSelected ? [.isSelected] : [])
     }
 
     private var imageAssetPicker: some View {
