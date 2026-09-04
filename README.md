@@ -15,7 +15,7 @@ The preview renderer receives only `ShaderSettings`. Backgrounds and other lab-o
 
 - Linear and zero-aware logarithmic sliders with reset buttons.
 - A clock-hand angle control with direct degree entry using mathematical angles: 0° points right and positive values rotate counterclockwise.
-- A two-to-four-stop gradient editor with draggable stops, hex entry, and interpolated insertion.
+- A two-to-eight-stop gradient editor with draggable stops, hex entry, interpolated insertion, and double-click insertion on the gradient track.
 - A reusable function Bézier editor with arbitrary point counts, per-point mirrored-handle linking, optional per-axis anchor bounds, numeric editing, pan and zoom, tangent endpoint extension, and shader-ready value and derivative lookup-table sampling.
 - Solid, checkerboard, and selectable image backgrounds. Image assets appear in a thumbnail grid and are registered in `BackgroundImageAsset`. Checkerboard and image placement support click-drag and two-finger trackpad panning, trackpad pinch, keyboard nudging, and inspector scaling.
 - Local autosave, reset, JSON import/export, and JSON clipboard copying.

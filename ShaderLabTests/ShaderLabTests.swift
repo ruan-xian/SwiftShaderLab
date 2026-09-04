@@ -102,6 +102,26 @@ struct ShaderLabTests {
     }
 
     @Test
+    func gradientInsertionAtLocationInterpolatesAndHonorsMaximum() throws {
+        let black = SRGBAColor(red: 0, green: 0, blue: 0)
+        let white = SRGBAColor(red: 1, green: 1, blue: 1)
+        var stops = [
+            ShaderGradientStop(location: 0, color: black),
+            ShaderGradientStop(location: 1, color: white),
+        ]
+
+        stops = GradientRules.insertingStop(at: 0.25, into: stops)
+        let inserted = try #require(stops.first { abs($0.location - 0.25) < 0.000_001 })
+        #expect(abs(inserted.color.red - 0.25) < 0.000_001)
+
+        for location in [0.4, 0.5, 0.6, 0.7, 0.8] {
+            stops = GradientRules.insertingStop(at: location, into: stops)
+        }
+        #expect(stops.count == 8)
+        #expect(GradientRules.insertingStop(at: 0.9, into: stops) == stops)
+    }
+
+    @Test
     func versionOneDocumentsLoadCompleteDefaults() throws {
         var document = ShaderLabDocument.defaults
         document.schemaVersion = 1

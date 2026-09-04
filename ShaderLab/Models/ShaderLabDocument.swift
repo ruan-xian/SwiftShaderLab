@@ -387,7 +387,7 @@ struct SRGBAColor: Codable, Equatable {
 
 enum GradientRules {
     static let minimumStopCount = 2
-    static let maximumStopCount = 4
+    static let maximumStopCount = 8
     static let minimumSpacing = 0.01
 
     static func sanitized(_ stops: [ShaderGradientStop]) -> [ShaderGradientStop] {
@@ -431,7 +431,21 @@ enum GradientRules {
             .max { $0.width < $1.width }
         guard let widest, widest.width >= minimumSpacing * 2 else { return stops }
 
-        let location = (widest.lower + widest.upper) / 2
+        return insertingStop(at: (widest.lower + widest.upper) / 2, into: stops)
+    }
+
+    static func insertingStop(
+        at proposedLocation: Double,
+        into stops: [ShaderGradientStop]
+    ) -> [ShaderGradientStop] {
+        let stops = sanitized(stops)
+        guard stops.count < maximumStopCount else { return stops }
+
+        let location = proposedLocation.clamped(to: 0 ... 1)
+        guard stops.allSatisfy({ abs($0.location - location) >= minimumSpacing }) else {
+            return stops
+        }
+
         var result = stops
         result.append(ShaderGradientStop(location: location, color: color(at: location, in: stops)))
         return result.sorted { $0.location < $1.location }

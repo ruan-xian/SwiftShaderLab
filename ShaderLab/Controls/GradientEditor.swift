@@ -101,6 +101,18 @@ struct GradientEditor: View {
                     .overlay { RoundedRectangle(cornerRadius: 6).stroke(.primary.opacity(0.3)) }
                     .frame(width: trackWidth, height: 30)
                     .offset(x: inset)
+                    .contentShape(Rectangle())
+                    .onTapGesture(
+                        count: 2,
+                        coordinateSpace: .named("ShaderLabGradientTrack")
+                    ) { location in
+                        let normalizedLocation = Double((location.x - inset) / trackWidth)
+                        let handleRadius = Double(Self.handleWidth / 2 / trackWidth)
+                        guard stops.allSatisfy({
+                            abs($0.location - normalizedLocation) > handleRadius
+                        }) else { return }
+                        insertStop(at: normalizedLocation)
+                    }
 
                 ForEach(stops) { stop in
                     stopHandle(stop)
@@ -179,6 +191,12 @@ struct GradientEditor: View {
             : stops[index + 1].location - GradientRules.minimumSpacing
         guard lower <= upper else { return }
         stops[index].location = proposed.clamped(to: lower ... upper)
+    }
+
+    private func insertStop(at location: Double) {
+        let oldIDs = Set(stops.map(\.id))
+        stops = GradientRules.insertingStop(at: location, into: stops)
+        selectedID = stops.first { !oldIDs.contains($0.id) }?.id ?? selectedID
     }
 
     private func removeSelectedStop() {
