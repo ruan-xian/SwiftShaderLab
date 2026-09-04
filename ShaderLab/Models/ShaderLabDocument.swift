@@ -25,6 +25,7 @@ struct ShaderLabDocument: Codable, Equatable {
         result.shader.scale = result.shader.scale.clamped(to: 0.01 ... 100)
         result.shader.speed = result.shader.speed.clamped(to: 0 ... 8)
         result.shader.gradientStops = GradientRules.sanitized(result.shader.gradientStops)
+        result.preview.subjectScale = result.preview.subjectScale.clamped(to: 0.25 ... 2)
         result.preview.checkerScale = result.preview.checkerScale.clamped(to: 12 ... 600)
         result.preview.imageScale = result.preview.imageScale.clamped(to: 0.25 ... 4)
         return result
@@ -83,6 +84,7 @@ struct ShaderSettings: Codable, Equatable {
 
 struct PreviewSettings: Codable, Equatable {
     var isDarkMode: Bool
+    var subjectScale: Double
     var backgroundMode: BackgroundMode
     var isLocked: Bool
     var solidColor: SRGBAColor
@@ -98,6 +100,7 @@ struct PreviewSettings: Codable, Equatable {
 
     static let defaults = PreviewSettings(
         isDarkMode: false,
+        subjectScale: 1,
         backgroundMode: .solid,
         isLocked: false,
         solidColor: SRGBAColor(red: 0.13, green: 0.13, blue: 0.15),
@@ -114,6 +117,7 @@ struct PreviewSettings: Codable, Equatable {
 
     private enum CodingKeys: String, CodingKey {
         case isDarkMode
+        case subjectScale
         case backgroundMode
         case isLocked
         case solidColor
@@ -133,6 +137,7 @@ extension PreviewSettings {
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         isDarkMode = try container.decodeIfPresent(Bool.self, forKey: .isDarkMode) ?? false
+        subjectScale = try container.decodeIfPresent(Double.self, forKey: .subjectScale) ?? 1
         backgroundMode = try container.decode(BackgroundMode.self, forKey: .backgroundMode)
         isLocked = try container.decodeIfPresent(Bool.self, forKey: .isLocked) ?? false
         solidColor = try container.decode(SRGBAColor.self, forKey: .solidColor)

@@ -91,20 +91,52 @@ struct ContentView: View {
                 HStack(spacing: 12) {
                     Button(action: togglePreviewControls) {
                         Label("Preview Controls", systemImage: "rectangle.on.rectangle")
-                            .frame(maxWidth: .infinity, alignment: .leading)
                             .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
 
+                    Spacer(minLength: 0)
+
+                    Text("Subject Scale")
+                        .font(.caption)
+                        .lineLimit(1)
+
+                    Slider(
+                        value: $store.document.preview.subjectScale,
+                        in: 0.25 ... 2,
+                        step: 0.05
+                    )
+                    .frame(minWidth: 64, idealWidth: 120, maxWidth: 160)
+                    .accessibilityLabel("Subject Scale")
+                    .accessibilityValue(
+                        Text(
+                            store.document.preview.subjectScale,
+                            format: .percent.precision(.fractionLength(0))
+                        )
+                    )
+
+                    Toggle(isOn: $store.document.preview.isDarkMode) {
+                        Image(
+                            systemName: store.document.preview.isDarkMode
+                                ? "moon.fill"
+                                : "sun.max.fill"
+                        )
+                    }
+                    .toggleStyle(.button)
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
+                    .accessibilityLabel("Dark Mode")
+                    .accessibilityValue(store.document.preview.isDarkMode ? "Dark" : "Light")
+
                     Toggle(isOn: $store.document.preview.isLocked) {
-                        Label(
-                            "Lock",
+                        Image(
                             systemImage: store.document.preview.isLocked ? "lock.fill" : "lock.open"
                         )
                     }
                     .toggleStyle(.button)
                     .buttonStyle(.bordered)
                     .controlSize(.small)
+                    .accessibilityLabel("Lock")
                     .accessibilityValue(store.document.preview.isLocked ? "Locked" : "Unlocked")
 
                     Button(action: togglePreviewControls) {
@@ -257,6 +289,7 @@ private struct PreviewPane: View {
                 PreviewBackground(settings: displayedSettings(in: geometry.size))
                 ShaderPreviewView(settings: shaderSettings)
                     .padding(36)
+                    .scaleEffect(CGFloat(previewSettings.subjectScale))
 
                 if isBackgroundInteractionEnabled {
                     TrackpadPanSurface(
@@ -548,14 +581,6 @@ private struct PreviewControlsView: View {
 
     var body: some View {
         VStack(spacing: 16) {
-            Toggle(isOn: $settings.isDarkMode) {
-                Label(
-                    "Dark Mode",
-                    systemImage: settings.isDarkMode ? "moon.fill" : "sun.max.fill"
-                )
-            }
-            .accessibilityValue(settings.isDarkMode ? "Dark" : "Light")
-
             HStack(spacing: 16) {
                 Text("Background")
                 Spacer()

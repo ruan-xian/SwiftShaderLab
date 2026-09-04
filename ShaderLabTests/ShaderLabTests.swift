@@ -21,6 +21,7 @@ struct ShaderLabTests {
     func backgroundPlacementsRoundTripIndependently() throws {
         var document = ShaderLabDocument.defaults
         document.preview.isDarkMode = true
+        document.preview.subjectScale = 1.35
         document.preview.isLocked = true
         document.preview.checkerOffsetX = 0.2
         document.preview.checkerOffsetY = -0.35
@@ -35,13 +36,15 @@ struct ShaderLabTests {
     }
 
     @Test
-    func importedBackgroundScalesAreClamped() throws {
+    func importedPreviewScalesAreClamped() throws {
         var document = ShaderLabDocument.defaults
+        document.preview.subjectScale = 3
         document.preview.checkerScale = 1000
         document.preview.imageScale = 0.1
 
         let decoded = try ShaderLabDocument.decodeJSON(document.jsonData())
 
+        #expect(decoded.preview.subjectScale == 2)
         #expect(decoded.preview.checkerScale == 600)
         #expect(decoded.preview.imageScale == 0.25)
     }
